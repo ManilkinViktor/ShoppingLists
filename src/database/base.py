@@ -12,7 +12,7 @@ engine = create_async_engine(
 session_factory = async_sessionmaker(engine)
 
 
-class ColumnConstraints:
+class FieldConstraints:
     base_len = 256
     description_len = 1024
 

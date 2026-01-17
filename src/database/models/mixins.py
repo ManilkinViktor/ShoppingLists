@@ -18,6 +18,7 @@ class TimestampMixin:
     )
 
 class UUIDMixin:
+    __abstract__ = True
 
     repr_attrs = ('id', )
 

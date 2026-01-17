@@ -1,11 +1,15 @@
 import datetime
 import enum, uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, PrimaryKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.base import Base
 from src.utils.datetime_utils import utc_now
+
+if TYPE_CHECKING:
+    from src.database.models import WorkspacesOrm, UsersOrm
 
 class Role(enum.StrEnum):
     viewer = 'viewer'
@@ -26,3 +30,10 @@ class WorkspaceMembersOrm(Base):
         PrimaryKeyConstraint(workspace_id, user_id),
     )
 
+    workspace: Mapped['WorkspacesOrm'] = relationship(
+        back_populates='members_roles'
+    )
+
+    user: Mapped['UsersOrm'] = relationship(
+        back_populates='roles'
+    )
