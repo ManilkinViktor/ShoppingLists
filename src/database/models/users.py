@@ -20,13 +20,10 @@ class UsersOrm(UUIDMixin, TimestampMixin, Base):
     email: Mapped[str] = mapped_column(String(FieldConstraints.base_len))
     hashed_password: Mapped[str]
 
-    accessible_workspaces: Mapped[List['WorkspacesOrm']] = relationship(
-        back_populates='users',
-        secondary='workspace_members'
-    )
 
-    roles: Mapped['WorkspaceMembersOrm'] = relationship(
-        back_populates='user'
+    roles: Mapped[List['WorkspaceMembersOrm']] = relationship(
+        back_populates='user',
+        overlaps='accessible_workspaces',
     )
 
 

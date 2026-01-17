@@ -10,7 +10,7 @@ from src.database.base import Base, FieldConstraints
 from src.database.mixins import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
-    from src.database.models import ShoppingListsOrm, UsersOrm, WorkspaceMembersOrm
+    from src.database.models import ShoppingListsOrm, WorkspaceMembersOrm
 
 
 
@@ -25,11 +25,6 @@ class WorkspacesOrm(UUIDMixin, TimestampMixin, Base):
         back_populates='workspace',
     )
 
-    users: Mapped['UsersOrm'] = relationship(
-        back_populates='accessible_workspaces',
-        secondary='workspace_members'
-    )
-
-    members_roles: Mapped['WorkspaceMembersOrm'] = relationship(
-        back_populates='workspace'
+    members_roles: Mapped[List['WorkspaceMembersOrm']] = relationship(
+        back_populates='workspace',
     )
