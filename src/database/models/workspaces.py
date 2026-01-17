@@ -1,3 +1,4 @@
+print(f"IMPORTING workspaces from {__file__}")
 from typing import TYPE_CHECKING, List
 import uuid
 
@@ -6,7 +7,7 @@ from sqlalchemy import String, ForeignKey
 
 
 from src.database.base import Base, FieldConstraints
-from database.models.mixins import TimestampMixin, UUIDMixin
+from src.database.mixins import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from src.database.models import ShoppingListsOrm, UsersOrm, WorkspaceMembersOrm

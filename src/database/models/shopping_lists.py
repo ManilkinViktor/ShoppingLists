@@ -5,7 +5,7 @@ from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.base import Base, FieldConstraints
-from database.models.mixins import TimestampMixin, UUIDMixin
+from src.database.mixins import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from src.database.models import WorkspacesOrm, ListItemsOrm
