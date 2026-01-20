@@ -2,7 +2,7 @@ import datetime
 import enum, uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, PrimaryKeyConstraint
+from sqlalchemy import ForeignKey, PrimaryKeyConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.base import Base
@@ -35,5 +35,5 @@ class WorkspaceMembersOrm(Base):
     )
 
     user: Mapped['UsersOrm'] = relationship(
-        back_populates='roles'
+        back_populates='connected_workspaces'
     )

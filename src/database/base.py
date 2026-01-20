@@ -15,6 +15,7 @@ session_factory = async_sessionmaker(engine)
 class FieldConstraints:
     base_len = 256
     description_len = 1024
+    quantity_border = 10 ** 18
 
 
 class Base(DeclarativeBase):

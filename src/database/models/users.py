@@ -21,7 +21,7 @@ class UsersOrm(UUIDMixin, TimestampMixin, Base):
     hashed_password: Mapped[str]
 
 
-    roles: Mapped[List['WorkspaceMembersOrm']] = relationship(
+    connected_workspaces: Mapped[List['WorkspaceMembersOrm']] = relationship(
         back_populates='user',
         overlaps='accessible_workspaces',
     )

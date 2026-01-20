@@ -81,7 +81,7 @@ def upgrade() -> None:
         sa.Column("list_id", sa.UUID(), nullable=False),
         sa.Column("name", sa.String(length=256), nullable=False),
         sa.Column("quantity", sa.Integer(), nullable=True),
-        sa.Column("unit", sa.String(), nullable=True),
+        sa.Column("unit", sa.String(length=256), nullable=True),
         sa.Column("category", sa.String(length=256), nullable=True),
         sa.Column("is_purchased", sa.Boolean(), nullable=False),
         sa.Column("id", sa.UUID(), nullable=False),

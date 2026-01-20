@@ -19,7 +19,7 @@ class ListItemsOrm(UUIDMixin, TimestampMixin, Base):
     list_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('shopping_lists.id', ondelete='CASCADE'))
     name: Mapped[str] = mapped_column(String(FieldConstraints.base_len))
     quantity: Mapped[int | None]
-    unit: Mapped[str | None]
+    unit: Mapped[str | None] = mapped_column(String(FieldConstraints.base_len))
     category: Mapped[str | None] = mapped_column(String(FieldConstraints.base_len))
     is_purchased: Mapped[bool] = mapped_column(default=False)
 
