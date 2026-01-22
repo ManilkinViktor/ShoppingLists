@@ -18,7 +18,7 @@ class UsersOrm(UUIDMixin, TimestampMixin, Base):
     cnt_repr_attrs = 2
 
     name: Mapped[str] = mapped_column(String(FieldConstraints.base_len))
-    email: Mapped[str] = mapped_column(String(FieldConstraints.base_len))
+    email: Mapped[str] = mapped_column(String(FieldConstraints.base_len), unique=True)
     hashed_password: Mapped[str]
 
 
