@@ -3,12 +3,12 @@ import uuid
 
 from pydantic import Field
 
-from src.schemas.mixins import UUIDMixinDTO, TimeStampMixinDTO
-from src.database.base import FieldConstraints
+from schemas.mixins import UUIDMixinDTO, TimeStampMixinDTO
+from core.constants import FieldConstraints
 
 if TYPE_CHECKING:
-    from src.schemas.shopping_lists import ShoppingListRelItemDTO
-    from src.schemas.workspace_members import WorkspaceMembersRelUserDTO
+    from schemas.shopping_lists import ShoppingListRelItemDTO
+    from schemas.workspace_members import WorkspaceMembersRelUserDTO
 
 
 class WorkspaceDTO(UUIDMixinDTO, TimeStampMixinDTO):

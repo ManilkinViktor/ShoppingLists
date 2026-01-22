@@ -2,11 +2,11 @@ from typing import Annotated, List, TYPE_CHECKING
 
 from pydantic import EmailStr, Field
 
-from src.schemas.mixins import UUIDMixinDTO, TimeStampMixinDTO
-from src.database.base import FieldConstraints
+from schemas.mixins import UUIDMixinDTO, TimeStampMixinDTO
+from core.constants import FieldConstraints
 
 if TYPE_CHECKING:
-    from src.schemas.workspace_members import WorkspaceMemberRelWorkspaceDTO
+    from schemas.workspace_members import WorkspaceMemberRelWorkspaceDTO
 
 
 class UserDTO(UUIDMixinDTO, TimeStampMixinDTO):

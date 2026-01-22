@@ -4,11 +4,12 @@ from typing import TYPE_CHECKING, List
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.database.base import Base, FieldConstraints
-from src.database.mixins import TimestampMixin, UUIDMixin
+from database.base import Base
+from core.constants import FieldConstraints
+from database.mixins import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
-    from src.database.models import WorkspacesOrm, ListItemsOrm
+    from database.models import WorkspacesOrm, ListItemsOrm
 
 
 class ShoppingListsOrm(UUIDMixin, TimestampMixin, Base):

@@ -1,8 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pathlib import Path
+from dotenv import find_dotenv
 
-
-ENV_FILE_PATH = Path(__file__).parent.parent / ".env"
 
 class Settings(BaseSettings):
     DB_HOST: str = ...
@@ -18,7 +16,7 @@ class Settings(BaseSettings):
 
 
     model_config = SettingsConfigDict(
-        env_file=ENV_FILE_PATH,
+        env_file=find_dotenv(),
         extra='ignore',
     )
 

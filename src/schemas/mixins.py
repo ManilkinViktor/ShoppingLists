@@ -2,7 +2,7 @@ import datetime, uuid
 
 from pydantic import BaseModel, field_validator, validator
 
-from src.utils.datetime_utils import utc_now
+from utils.datetime_utils import utc_now
 
 class TimeStampMixinDTO(BaseModel):
     created_at: datetime.datetime

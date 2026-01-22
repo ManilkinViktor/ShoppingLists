@@ -7,9 +7,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-from src.config import settings
-from src.database.base import Base
-import src.database.models # noqa
+from core.config import settings
+from database.base import Base
+import database.models # noqa
 
 config = context.config
 

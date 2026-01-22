@@ -6,11 +6,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, ForeignKey
 
 
-from src.database.base import Base, FieldConstraints
-from src.database.mixins import TimestampMixin, UUIDMixin
+from database.base import Base
+from core.constants import FieldConstraints
+from database.mixins import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
-    from src.database.models import ShoppingListsOrm, WorkspaceMembersOrm
+    from database.models import ShoppingListsOrm, WorkspaceMembersOrm
 
 
 

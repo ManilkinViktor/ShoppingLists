@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING
 from sqlalchemy import ForeignKey, PrimaryKeyConstraint, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.database.base import Base
-from src.utils.datetime_utils import utc_now
+from database.base import Base
+from utils.datetime_utils import utc_now
 
 if TYPE_CHECKING:
-    from src.database.models import WorkspacesOrm, UsersOrm
+    from database.models import WorkspacesOrm, UsersOrm
 
 class Role(enum.StrEnum):
     viewer = 'viewer'

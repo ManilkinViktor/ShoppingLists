@@ -6,7 +6,7 @@ from sqlalchemy import UUID, TIMESTAMP
 
 from uuid_utils import uuid7
 
-from src.utils.datetime_utils import utc_now
+from utils.datetime_utils import utc_now
 
 
 
