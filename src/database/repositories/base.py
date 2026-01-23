@@ -1,47 +1,70 @@
-import uuid
-from typing import Generic, TypeVar, Type
+from typing import Generic, TypeVar, Type, Any, List, Sequence
 from abc import ABC
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import inspect, select
+from pydantic import BaseModel
 
 from database.base import Base
-from schemas.mixins import UUIDMixinDTO
 
 ModelOrm = TypeVar('ModelOrm', bound=Base)
-AddDTO = TypeVar('AddDTO', bound=UUIDMixinDTO)
-DTO = TypeVar('DTO', bound=UUIDMixinDTO)
+AddDTO = TypeVar('AddDTO', bound=BaseModel)
+DTO = TypeVar('DTO', bound=BaseModel)
 
 class BaseRepository(Generic[ModelOrm, AddDTO, DTO], ABC):
-
-    def __init__(self, session: AsyncSession,
+    def __init__(self, _session: AsyncSession,
                  _model: Type[ModelOrm], _add_dto: Type[AddDTO], _dto: Type[DTO]):
-        self.session = session
+        self._session = _session
         self._model = _model
         self._add_dto = _add_dto
         self._dto = _dto
 
+
     async def add(self, data: AddDTO) -> None:
         instance: ModelOrm = self._model(**data.model_dump())
-        self.session.add(instance)
+        self._session.add(instance)
 
-    async def get_by_id(self, id_: uuid.UUID) -> DTO | None:
-        instance: ModelOrm | None = await self.session.get(self._model, id_)
-        if instance:
-            instance: DTO = self._dto.model_validate(instance, from_attributes=True)
-        return instance
 
-    async def update(self, new_data: DTO) -> bool:
-        instance: ModelOrm | None = await self.session.get(self._model, new_data.id)
+    async def get(self, id_value: Any) -> DTO | None:
+        instance: ModelOrm = await self._session.get(self._model, id_value)
         if instance:
-            for key, value in new_data.model_dump().items():
-                setattr(instance, key, value)
-            await self.session.merge(instance)
+            return self._dto.model_validate(instance, from_attributes=True)
+        return None
+
+    async def get_by(self, **filters) -> DTO | None:
+        query = select(self._model).filter_by(**filters)
+        result = await self._session.execute(query)
+        instance: ModelOrm = result.scalar_one_or_none()
+        if instance:
+            return self._dto.model_validate(instance, from_attributes=True)
+        return None
+
+    async def get_all(self, **filters) -> List[DTO]:
+        query = select(self._model).filter_by(**filters)
+        result = await self._session.execute(query)
+        instances: Sequence[ModelOrm] = result.scalars().all()
+        return [self._dto.model_validate(instance, from_attributes=True)
+                for instance in instances]
+
+    async def _exists(self, get_instance: ModelOrm) -> bool:
+        pk_values = inspect(get_instance).identity
+        instance: ModelOrm = await self._session.get(self._model, pk_values)
+        if instance:
             return True
         return False
 
-    async def delete(self, id_):
-        instance: ModelOrm | None = await self.session.get(self._model, id_)
+    async def update(self, id_value: Any, data: DTO) -> bool:
+        instance: ModelOrm = await self._session.get(self._model, id_value)
         if instance:
-            await self.session.delete(instance)
+            for key, value in data.model_dump().items():
+                if hasattr(instance, key):
+                    setattr(instance, key, value)
+            return True
+        return False
+
+    async def delete(self, id_value: Any) -> bool:
+        instance: ModelOrm = await self._session.get(self._model, id_value)
+        if instance:
+            await self._session.delete(instance)
             return True
         return False
