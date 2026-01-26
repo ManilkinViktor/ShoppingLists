@@ -5,7 +5,7 @@ from database.models import ListItemsOrm
 from schemas.list_items import ListItemDTO
 
 
-class ShoppingListsRepository(
+class ListItemsRepository(
     BaseRepository[
         ListItemsOrm,
         ListItemDTO,
