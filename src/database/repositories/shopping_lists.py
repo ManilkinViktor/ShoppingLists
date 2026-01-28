@@ -2,12 +2,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.repositories.base import BaseRepository
 from database.models import ShoppingListsOrm
-from schemas.shopping_lists import ShoppingListDTO
+from schemas.shopping_lists import ShoppingListDTO, ShoppingListAddDTO
 
 class ShoppingListsRepository(
     BaseRepository[
         ShoppingListsOrm,
-        ShoppingListDTO,
+        ShoppingListAddDTO,
         ShoppingListDTO,
     ]):
 

@@ -10,11 +10,13 @@ if TYPE_CHECKING:
     from schemas.shopping_lists import ShoppingListRelItemDTO
     from schemas.workspace_members import WorkspaceMembersRelUserDTO
 
-
-class WorkspaceDTO(UUIDMixinDTO, TimeStampMixinDTO):
+class WorkspaceAddDTO(UUIDMixinDTO):
     name: str = Field(min_length=1, max_length=FieldConstraints.base_len)
     description: str | None = Field(max_length=FieldConstraints.base_len)
     owner_id: uuid.UUID | None
+
+class WorkspaceDTO(WorkspaceAddDTO, TimeStampMixinDTO):
+    pass
 
 class WorkspaceRelListDTO(WorkspaceDTO):
     shopping_lists: List['ShoppingListRelItemDTO'] | None

@@ -1,4 +1,5 @@
 from typing import Annotated, List, TYPE_CHECKING
+from abc import ABC
 
 from pydantic import EmailStr, Field
 
@@ -8,15 +9,17 @@ from core.constants import FieldConstraints
 if TYPE_CHECKING:
     from schemas.workspace_members import WorkspaceMemberRelWorkspaceDTO
 
-
-class UserDTO(UUIDMixinDTO, TimeStampMixinDTO):
+class UserBaseDTO(UUIDMixinDTO, ABC):
     name: str = Field(min_length=1, max_length=FieldConstraints.base_len)
     email: EmailStr
 
 
-password_field = Annotated[str, Field(min_length=5, max_length=FieldConstraints.base_len)]
+class UserDTO(UserBaseDTO, TimeStampMixinDTO):
+    pass
 
-class UserAddDTO(UserDTO):
+password_field = Annotated[str, Field(min_length=FieldConstraints.min_password, max_length=FieldConstraints.base_len)]
+
+class UserAddDTO(UserBaseDTO):
     password: password_field
     password_confirmation: password_field
 

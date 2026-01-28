@@ -1,13 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models import WorkspacesOrm
-from schemas.workspaces import WorkspaceDTO
+from schemas.workspaces import WorkspaceDTO, WorkspaceAddDTO
 from database.repositories.base import BaseRepository
 
 class WorkspacesRepository(
     BaseRepository[
         WorkspacesOrm,
-        WorkspaceDTO,
+        WorkspaceAddDTO,
         WorkspaceDTO
     ]):
 
