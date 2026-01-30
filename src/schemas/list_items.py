@@ -22,4 +22,4 @@ class ListItemDTO(ListItemAddDTO, TimeStampMixinDTO):
 
 
 class ListItemRelListDTO(ListItemDTO):
-    list: 'ShoppingListRelWorkspaceDTO'
+    shopping_list: 'ShoppingListRelWorkspaceDTO'

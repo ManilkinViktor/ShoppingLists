@@ -1,4 +1,4 @@
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String
@@ -22,7 +22,7 @@ class UsersOrm(UUIDMixin, TimestampMixin, Base):
     hashed_password: Mapped[str]
 
 
-    connected_workspaces: Mapped[List['WorkspaceMembersOrm']] = relationship(
+    connected_workspaces: Mapped[list['WorkspaceMembersOrm']] = relationship(
         back_populates='user',
         overlaps='accessible_workspaces',
     )

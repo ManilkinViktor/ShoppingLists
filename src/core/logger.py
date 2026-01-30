@@ -1,5 +1,6 @@
 import logging
 import sys
+from abc import ABCMeta
 from typing import Any
 from functools import wraps
 import asyncio
@@ -104,9 +105,9 @@ class AsyncHandler(logging.Handler):
 
 
 
-class LoggerMeta(type):
+class LoggerMeta(ABCMeta):
     """
-    A metaclass that automatically adds a `logger` field to classes.
+    A metaclass that automatically adds a `logger` field to abstract classes (child's elso have).
     The `logger` field is an instance of logging.Logger with the name of the class module.
     """
     def __new__(mcs, name: str, bases: tuple, namespace: dict[str, Any], **kwargs: Any) -> type:

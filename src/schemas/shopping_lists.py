@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 import uuid
 
 from pydantic import Field
@@ -20,7 +20,7 @@ class ShoppingListDTO(ShoppingListAddDTO, TimeStampMixinDTO):
     pass
 
 class ShoppingListRelItemDTO(ShoppingListDTO):
-    items: List['ListItemDTO'] | None
+    items: list['ListItemDTO'] | None
 
 class ShoppingListRelWorkspaceDTO(ShoppingListDTO):
     workspace: 'WorkspaceRelUserDTO | None'

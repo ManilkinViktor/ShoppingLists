@@ -1,5 +1,4 @@
-
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 import uuid
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -22,10 +21,10 @@ class WorkspacesOrm(UUIDMixin, TimestampMixin, Base):
     description: Mapped[str | None] = mapped_column(String(FieldConstraints.description_len))
     owner_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'))
 
-    shopping_lists: Mapped[List['ShoppingListsOrm']] = relationship(
+    shopping_lists: Mapped[list['ShoppingListsOrm']] = relationship(
         back_populates='workspace',
     )
 
-    members_roles: Mapped[List['WorkspaceMembersOrm']] = relationship(
+    members_roles: Mapped[list['WorkspaceMembersOrm']] = relationship(
         back_populates='workspace',
     )

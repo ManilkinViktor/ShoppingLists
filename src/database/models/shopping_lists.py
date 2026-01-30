@@ -1,5 +1,5 @@
 import uuid
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -26,7 +26,7 @@ class ShoppingListsOrm(UUIDMixin, TimestampMixin, Base):
         back_populates='shopping_lists',
     )
 
-    items: Mapped[List['ListItemsOrm']] = relationship(
+    items: Mapped[list['ListItemsOrm']] = relationship(
         back_populates='shopping_list'
     )
 

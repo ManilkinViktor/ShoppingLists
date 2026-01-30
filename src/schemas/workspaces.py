@@ -1,10 +1,11 @@
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 import uuid
 
-from pydantic import Field
+from pydantic import Field, BaseModel
 
 from schemas.mixins import UUIDMixinDTO, TimeStampMixinDTO
 from core.constants import FieldConstraints
+from database.models.workspace_members import Role
 
 if TYPE_CHECKING:
     from schemas.shopping_lists import ShoppingListRelItemDTO
@@ -19,9 +20,8 @@ class WorkspaceDTO(WorkspaceAddDTO, TimeStampMixinDTO):
     pass
 
 class WorkspaceRelListDTO(WorkspaceDTO):
-    shopping_lists: List['ShoppingListRelItemDTO'] | None
+    shopping_lists: list['ShoppingListRelItemDTO'] | None
 
 
 class WorkspaceRelUserDTO(WorkspaceDTO):
-    joined_users: List['WorkspaceMembersRelUserDTO'] | None
-
+    members_roles: list['WorkspaceMembersRelUserDTO'] | None

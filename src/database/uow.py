@@ -1,3 +1,6 @@
+from logging import Logger
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.repositories.workspaces import WorkspacesRepository
@@ -16,6 +19,7 @@ class UnitOfWork:
         self._workspace_members: WorkspaceMembersRepository | None = None
         self._shopping_lists: ShoppingListsRepository | None = None
         self._list_items: ListItemsRepository | None = None
+        self._aggregator_logs: list[tuple[Logger, dict[str, Any]]] = []
 
     async def __aenter__(self):
         return self
@@ -23,9 +27,29 @@ class UnitOfWork:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if exc_type:
            await self._session.rollback()
-        else:
-            await self._session.commit()
         await self._session.close()
+
+    async def commit(self):
+        await self._session.commit()
+        await  self._flush_logs()
+
+
+    def log(self, logger_obj: Logger, level: int, msg: str, *args, **kwargs):
+        self._aggregator_logs.append((logger_obj, {
+            'level': level,
+            'msg': msg,
+            'agrs': args,
+            'kwargs': kwargs,
+        }))
+
+    async def _flush_logs(self):
+        for logger_obj, entry in self._aggregator_logs:
+            logger_obj.log(
+                entry['level'],
+                entry['msg'],
+                *entry['args'],
+                **entry['kwargs']
+            )
 
 
     @property
@@ -50,7 +74,7 @@ class UnitOfWork:
     def shopping_lists(self):
         if self._shopping_lists is None:
             self._shopping_lists = ShoppingListsRepository(self._session)
-        return self._session
+        return self._shopping_lists
 
     @property
     def list_items(self):
@@ -61,8 +85,9 @@ class UnitOfWork:
     @classmethod
     async def get_with(cls):
         """
-        used for Depends
-        :return:
+        using:
+        uow: UnitOfWork = Depends(UnitOfWork.get_with)
         """
         async with session_factory() as session:
-            yield cls(session)
+            async with cls(session) as uow:
+                yield uow

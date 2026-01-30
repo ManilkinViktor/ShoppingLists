@@ -1,7 +1,7 @@
-from typing import Annotated, List, TYPE_CHECKING
+from typing import Annotated, TYPE_CHECKING
 from abc import ABC
 
-from pydantic import EmailStr, Field
+from pydantic import EmailStr, Field, model_validator, BaseModel
 
 from schemas.mixins import UUIDMixinDTO, TimeStampMixinDTO
 from core.constants import FieldConstraints
@@ -19,9 +19,20 @@ class UserDTO(UserBaseDTO, TimeStampMixinDTO):
 
 password_field = Annotated[str, Field(min_length=FieldConstraints.min_password, max_length=FieldConstraints.base_len)]
 
-class UserAddDTO(UserBaseDTO):
+
+class PasswordWithConfirm(BaseModel):
     password: password_field
     password_confirmation: password_field
+
+    @model_validator(mode='after')
+    def validate_password_confirmation(self):
+        if self.password != self.password_confirmation:
+            raise ValueError("The passwords don't match")
+        return self
+
+
+class UserAddDTO(PasswordWithConfirm, UserBaseDTO):
+    pass
 
 
 class UserAuthDTO(UserDTO):
@@ -29,4 +40,4 @@ class UserAuthDTO(UserDTO):
 
 
 class UserRelWorkspaceDTO(UserDTO):
-    connected_workspaces: List['WorkspaceMemberRelWorkspaceDTO']
+    connected_workspaces: list['WorkspaceMemberRelWorkspaceDTO']

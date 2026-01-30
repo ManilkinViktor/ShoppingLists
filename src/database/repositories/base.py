@@ -1,19 +1,16 @@
-from typing import Generic, TypeVar, Type, Any, List, Sequence
-from abc import ABC
+from typing import Generic, TypeVar, Type, Any, Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import inspect, select
+from sqlalchemy import inspect, select, or_
 from sqlalchemy.exc import SQLAlchemyError
-from pydantic import BaseModel
 
-from database.base import Base
+
+from schemas.types import ModelOrm, AddDTO, DTO
 from core.logger import LoggerMeta, logging_method_exception
 
-ModelOrm = TypeVar('ModelOrm', bound=Base)
-AddDTO = TypeVar('AddDTO', bound=BaseModel)
-DTO = TypeVar('DTO', bound=BaseModel)
 
-class BaseRepository(Generic[ModelOrm, AddDTO, DTO], ABC, metaclass=LoggerMeta):
+
+class BaseRepository(Generic[ModelOrm, AddDTO, DTO], metaclass=LoggerMeta):
     def __init__(self, _session: AsyncSession,
                  _model: Type[ModelOrm], _add_dto: Type[AddDTO], _dto: Type[DTO]):
         self._session = _session
@@ -22,9 +19,10 @@ class BaseRepository(Generic[ModelOrm, AddDTO, DTO], ABC, metaclass=LoggerMeta):
         self._dto = _dto
 
     @logging_method_exception(SQLAlchemyError)
-    async def add(self, data: AddDTO) -> None:
+    async def add(self, data: AddDTO) -> DTO:
         instance: ModelOrm = self._model(**data.model_dump())
         self._session.add(instance)
+        return self._dto.model_validate(instance, from_attributes=True)
 
     @logging_method_exception(SQLAlchemyError)
     async def get(self, id_value: Any) -> DTO | None:
@@ -42,8 +40,18 @@ class BaseRepository(Generic[ModelOrm, AddDTO, DTO], ABC, metaclass=LoggerMeta):
             return self._dto.model_validate(instance, from_attributes=True)
         return None
 
+    @logging_method_exception
+    async def get_by_filters_or(self, **filters_or) -> DTO | None:
+        conditions = [getattr(self._model, key) == value for key, value in filters_or]
+        stmt = select(self._model).where(or_(*conditions))
+        result = await self._session.execute(stmt)
+        instance: ModelOrm = result.scalar_one_or_none()
+        if instance:
+            return self._dto.model_validate(instance, from_attributes=True)
+        return None
+
     @logging_method_exception(SQLAlchemyError)
-    async def get_all(self, **filters) -> List[DTO]:
+    async def get_all(self, **filters) -> list[DTO]:
         query = select(self._model).filter_by(**filters)
         result = await self._session.execute(query)
         instances: Sequence[ModelOrm] = result.scalars().all()
@@ -59,14 +67,14 @@ class BaseRepository(Generic[ModelOrm, AddDTO, DTO], ABC, metaclass=LoggerMeta):
         return False
 
     @logging_method_exception(SQLAlchemyError)
-    async def update(self, id_value: Any, data: DTO) -> bool:
+    async def update(self, id_value: Any, **update_data) -> DTO | None:
         instance: ModelOrm = await self._session.get(self._model, id_value)
         if instance:
-            for key, value in data.model_dump().items():
-                if hasattr(instance, key):
+            for key, value in update_data.items():
+                if not(value is None) and hasattr(instance, key):
                     setattr(instance, key, value)
-            return True
-        return False
+            return self._dto.model_validate(instance, from_attributes=True)
+        return None
 
     @logging_method_exception(SQLAlchemyError)
     async def delete(self, id_value: Any) -> bool:
