@@ -17,7 +17,7 @@ class WorkspaceAddDTO(UUIDMixinDTO):
     owner_id: uuid.UUID | None
 
 class WorkspaceDTO(WorkspaceAddDTO, TimeStampMixinDTO):
-    pass
+    version: int = Field(ge=1)
 
 class WorkspaceRelListDTO(WorkspaceDTO):
     shopping_lists: list['ShoppingListRelItemDTO'] | None

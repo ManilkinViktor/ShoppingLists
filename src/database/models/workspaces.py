@@ -19,6 +19,7 @@ class WorkspacesOrm(UUIDMixin, TimestampMixin, Base):
 
     name: Mapped[str] = mapped_column(String(FieldConstraints.base_len))
     description: Mapped[str | None] = mapped_column(String(FieldConstraints.description_len))
+    version: Mapped[int] = mapped_column(default=1)
     owner_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'))
 
     shopping_lists: Mapped[list['ShoppingListsOrm']] = relationship(

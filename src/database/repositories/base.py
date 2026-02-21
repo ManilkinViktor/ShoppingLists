@@ -22,6 +22,7 @@ class BaseRepository(Generic[ModelOrm, AddDTO, DTO], metaclass=LoggerMeta):
     async def add(self, data: AddDTO) -> DTO:
         instance: ModelOrm = self._model(**data.model_dump())
         self._session.add(instance)
+        await self._session.flush()
         return self._dto.model_validate(instance, from_attributes=True)
 
     @logging_method_exception(SQLAlchemyError)

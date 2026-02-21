@@ -19,7 +19,7 @@ class WorkspacesRepository(
     def __init__(self, _session: AsyncSession):
         super().__init__(
             _session,
-            _model=WorkspacesOrm, _add_dto=WorkspaceDTO, _dto=WorkspaceDTO
+            _model=WorkspacesOrm, _add_dto=WorkspaceAddDTO, _dto=WorkspaceDTO
         )
 
 
