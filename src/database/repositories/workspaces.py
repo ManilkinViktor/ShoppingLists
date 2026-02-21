@@ -35,9 +35,7 @@ class WorkspacesRepository(
         )
         result = await self._session.execute(query)
         workspace: WorkspacesOrm = result.scalar_one_or_none()
-        if workspace:
-            return WorkspaceRelListDTO.model_validate(workspace, from_attributes=True)
-        return None
+        return WorkspaceRelListDTO.model_validate(workspace, from_attributes=True) if workspace else None
 
     async def get_accessible_user_workspaces_with_lists(self, user_id: uuid.UUID) -> list[tuple[WorkspaceRelListDTO, Role]]:
         """Return accessible users workspaces with role and list together list's items"""

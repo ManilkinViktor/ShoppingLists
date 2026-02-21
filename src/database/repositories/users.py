@@ -24,10 +24,7 @@ class UsersRepository(
     @logging_method_exception(SQLAlchemyError)
     async def get_with_password(self, id_value: uuid.UUID) -> UserAuthDTO | None:
         instance: UsersOrm | None = await self._session.get(UsersOrm, id_value)
-        if instance:
-            return UserAuthDTO.model_validate(instance, from_attributes=True)
-        return None
-
+        return UserAuthDTO.model_validate(instance, from_attributes=True) if instance else None
 
 
 

@@ -28,18 +28,14 @@ class BaseRepository(Generic[ModelOrm, AddDTO, DTO], metaclass=LoggerMeta):
     @logging_method_exception(SQLAlchemyError)
     async def get(self, id_value: Any) -> DTO | None:
         instance: ModelOrm = await self._session.get(self._model, id_value)
-        if instance:
-            return self._dto.model_validate(instance, from_attributes=True)
-        return None
+        return self._dto.model_validate(instance, from_attributes=True) if instance else None
 
     @logging_method_exception(SQLAlchemyError)
     async def get_by(self, **filters) -> DTO | None:
         query = select(self._model).filter_by(**filters)
         result = await self._session.execute(query)
         instance: ModelOrm = result.scalar_one_or_none()
-        if instance:
-            return self._dto.model_validate(instance, from_attributes=True)
-        return None
+        return self._dto.model_validate(instance, from_attributes=True) if instance else None
 
     @logging_method_exception
     async def get_by_filters_or(self, **filters_or) -> DTO | None:
@@ -47,9 +43,7 @@ class BaseRepository(Generic[ModelOrm, AddDTO, DTO], metaclass=LoggerMeta):
         stmt = select(self._model).where(or_(*conditions))
         result = await self._session.execute(stmt)
         instance: ModelOrm = result.scalar_one_or_none()
-        if instance:
-            return self._dto.model_validate(instance, from_attributes=True)
-        return None
+        return self._dto.model_validate(instance, from_attributes=True) if instance else None
 
     @logging_method_exception(SQLAlchemyError)
     async def get_all(self, **filters) -> list[DTO]:
@@ -63,9 +57,7 @@ class BaseRepository(Generic[ModelOrm, AddDTO, DTO], metaclass=LoggerMeta):
     async def _exists(self, get_instance: ModelOrm) -> bool:
         pk_values = inspect(get_instance).identity
         instance: ModelOrm = await self._session.get(self._model, pk_values)
-        if instance:
-            return True
-        return False
+        return bool(instance)
 
     @logging_method_exception(SQLAlchemyError)
     async def update(self, id_value: Any, **update_data) -> DTO | None:
@@ -74,13 +66,11 @@ class BaseRepository(Generic[ModelOrm, AddDTO, DTO], metaclass=LoggerMeta):
             for key, value in update_data.items():
                 if not(value is None) and hasattr(instance, key):
                     setattr(instance, key, value)
-            return self._dto.model_validate(instance, from_attributes=True)
-        return None
+        return self._dto.model_validate(instance, from_attributes=True) if instance else None
 
     @logging_method_exception(SQLAlchemyError)
     async def delete(self, id_value: Any) -> bool:
         instance: ModelOrm = await self._session.get(self._model, id_value)
         if instance:
             await self._session.delete(instance)
-            return True
-        return False
+        return bool(instance)

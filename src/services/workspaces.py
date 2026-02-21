@@ -20,9 +20,9 @@ class WorkspacesService(BaseService):
 
     @staticmethod
     def _same_workspaces(first_workspace: WorkspaceDTO, second_workspace: WorkspaceAddDTO) -> bool:
-        for field, value in second_workspace:
-            if getattr(first_workspace, field) != value:
-                return False
-        return True
+        return all(
+            getattr(first_workspace, field) == value
+            for field, value in second_workspace
+        )
 
 

@@ -27,6 +27,4 @@ class ShoppingListsRepository(
                  .options(selectinload(ShoppingListsOrm.items)))
         result = await self._session.execute(query)
         list_orm: ShoppingListsOrm | None = result.scalar_one_or_none()
-        if list_orm:
-            return ShoppingListRelItemDTO.model_validate(list_orm, from_attributes=True)
-        return None
+        return ShoppingListRelItemDTO.model_validate(list_orm, from_attributes=True) if list_orm else None

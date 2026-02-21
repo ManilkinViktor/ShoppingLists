@@ -22,6 +22,11 @@ class TimestampMixin:
         default=utc_now,
         onupdate=utc_now,
     )
+    deleted_at: Mapped[datetime.datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+        default=None,
+    )
 
 class UUIDMixin:
     __abstract__ = True
@@ -33,4 +38,3 @@ class UUIDMixin:
         primary_key=True,
         default=uuid7(),
     )
-
