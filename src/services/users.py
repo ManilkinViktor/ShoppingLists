@@ -7,7 +7,7 @@ from schemas.users import UserAddDTO, UserDTO, UserAuthDTO, UserBaseDTO
 class UserService(BaseService):
 
     async def create(self, user_data: UserAddDTO) -> UserDTO:
-        found_user: UserDTO | None = self.uow.users.get_by_filters_or(email=user_data.email, id=user_data.id)
+        found_user: UserDTO | None = await self.uow.users.get_by_filters_or(email=user_data.email, id=user_data.id)
         if found_user:
             if user_data.id == found_user.id:
                 if self._same_users(found_user, user_data):

@@ -39,7 +39,7 @@ class BaseRepository(Generic[ModelOrm, AddDTO, DTO], metaclass=LoggerMeta):
 
     @logging_method_exception
     async def get_by_filters_or(self, **filters_or) -> DTO | None:
-        conditions = [getattr(self._model, key) == value for key, value in filters_or]
+        conditions = [getattr(self._model, key) == value for key, value in filters_or.items()]
         stmt = select(self._model).where(or_(*conditions))
         result = await self._session.execute(stmt)
         instance: ModelOrm = result.scalar_one_or_none()

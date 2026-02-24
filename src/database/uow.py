@@ -30,8 +30,12 @@ class UnitOfWork:
         await self._session.close()
 
     async def commit(self):
-        await self._session.commit()
-        await  self._flush_logs()
+        try:
+            await self._session.commit()
+        except Exception:
+            await self._session.rollback()
+            raise
+        await self._flush_logs()
 
 
     def log(self, logger_obj: Logger, level: int, msg: str, *args, **kwargs):

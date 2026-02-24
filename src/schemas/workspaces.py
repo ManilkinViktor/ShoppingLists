@@ -5,7 +5,6 @@ from pydantic import Field, BaseModel
 
 from schemas.mixins import UUIDMixinDTO, TimeStampMixinDTO
 from core.constants import FieldConstraints
-from database.models.workspace_members import Role
 
 if TYPE_CHECKING:
     from schemas.shopping_lists import ShoppingListRelItemDTO
