@@ -20,9 +20,6 @@ class TimeStampMixinDTO(BaseModel):
         return v
 
 
-
-
-
 class UUIDMixinDTO(BaseModel):
     id: uuid.UUID
     _uuid_version: ClassVar[int] = 7

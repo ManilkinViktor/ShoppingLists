@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from database.models import WorkspacesOrm, ShoppingListsOrm, WorkspaceMembersOrm
 from database.models.workspace_members import Role
-from schemas.workspaces import WorkspaceDTO, WorkspaceAddDTO, WorkspaceRelListDTO, UserAccessibleWorkspace
+from schemas.workspaces import WorkspaceDTO, WorkspaceAddDTO, WorkspaceRelListDTO
 from database.repositories.base import BaseRepository
 
 class WorkspacesRepository(
