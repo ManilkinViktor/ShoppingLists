@@ -1,4 +1,4 @@
-from typing import Annotated, TYPE_CHECKING
+from typing import Annotated, TYPE_CHECKING, TypeAlias
 from abc import ABC
 
 from pydantic import EmailStr, Field, model_validator, BaseModel
@@ -17,7 +17,7 @@ class UserBaseDTO(UUIDMixinDTO, ABC):
 class UserDTO(UserBaseDTO, TimeStampMixinDTO):
     pass
 
-password_field = Annotated[str, Field(min_length=FieldConstraints.min_password, max_length=FieldConstraints.base_len)]
+password_field: TypeAlias = Annotated[str, Field(min_length=FieldConstraints.min_password, max_length=FieldConstraints.base_len)]
 
 
 class PasswordWithConfirm(BaseModel):
@@ -33,6 +33,10 @@ class PasswordWithConfirm(BaseModel):
 
 class UserAddDTO(PasswordWithConfirm, UserBaseDTO):
     pass
+
+
+class UserAddAuthDTO(UserBaseDTO):
+    hashed_password: str
 
 
 class UserAuthDTO(UserDTO):

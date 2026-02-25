@@ -9,3 +9,8 @@ class EmailAlreadyExists(DomainException):
 class ConflictUUID(DomainException):
     error_code: str = 'CONFLICT_UUID'
     public_message: str = 'UUID already exists'
+
+
+class InvalidCredentials(DomainException):
+    error_code: str = 'INVALID_CREDENTIALS'
+    public_message: str = 'Incorrect email or password'

@@ -8,7 +8,7 @@ from core.constants import FieldConstraints
 from database.mixins import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
-    from database.models import WorkspacesOrm, WorkspaceMembersOrm
+    from database.models import WorkspacesOrm, WorkspaceMembersOrm, RefreshSessionsOrm
 
 
 
@@ -27,5 +27,9 @@ class UsersOrm(UUIDMixin, TimestampMixin, Base):
         overlaps='accessible_workspaces',
     )
 
+    refresh_sessions: Mapped[list['RefreshSessionsOrm']] = relationship(
+        back_populates='user',
+        cascade='all, delete-orphan',
+    )
 
 

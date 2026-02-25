@@ -8,6 +8,7 @@ from database.repositories.workspace_members import WorkspaceMembersRepository
 from database.repositories.list_items import ListItemsRepository
 from database.repositories.shopping_lists import ShoppingListsRepository
 from database.repositories.users import UsersRepository
+from database.repositories.refresh_sessions import RefreshSessionsRepository
 
 from database.session import session_factory
 
@@ -19,6 +20,7 @@ class UnitOfWork:
         self._workspace_members: WorkspaceMembersRepository | None = None
         self._shopping_lists: ShoppingListsRepository | None = None
         self._list_items: ListItemsRepository | None = None
+        self._refresh_sessions: RefreshSessionsRepository | None = None
         self._aggregator_logs: list[tuple[Logger, dict[str, Any]]] = []
 
     async def __aenter__(self):
@@ -85,6 +87,12 @@ class UnitOfWork:
         if self._list_items is None:
             self._list_items = ListItemsRepository(self._session)
         return self._list_items
+
+    @property
+    def refresh_sessions(self):
+        if self._refresh_sessions is None:
+            self._refresh_sessions = RefreshSessionsRepository(self._session)
+        return self._refresh_sessions
 
     @classmethod
     async def get_with(cls):

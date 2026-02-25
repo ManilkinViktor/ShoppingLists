@@ -1,7 +1,7 @@
 from core.security import hash_password
 from services.base import BaseService
 from services.exceptions import EmailAlreadyExists, ConflictUUID
-from schemas.users import UserAddDTO, UserDTO, UserAuthDTO, UserBaseDTO
+from schemas.users import UserAddDTO, UserDTO, UserAddAuthDTO, UserBaseDTO
 
 
 class UserService(BaseService):
@@ -18,14 +18,17 @@ class UserService(BaseService):
             self._log_info(f"User wasn't created: email already exists", extra={'user_id': user_data.id})
             raise EmailAlreadyExists
         hashed_password: str = await hash_password(user_data.password)
-        user_auth_data: UserAuthDTO = UserAuthDTO(**user_data.model_dump(), hashed_password=hashed_password)
-        await self.uow.users.add(user_auth_data)
+        user_auth_data: UserAddAuthDTO = UserAddAuthDTO(
+            **user_data.model_dump(),
+            hashed_password=hashed_password,
+        )
+        user: UserDTO = await self.uow.users.add(user_auth_data)
         self._log_info(f"User was created", extra={'user_id': user_data.id})
-        return UserDTO(**user_auth_data.model_dump())
+        return user
 
 
     async def change_password(self, user: UserDTO, password: str):
-        hashed_password = hash_password(password)
+        hashed_password = await hash_password(password)
         await self.uow.users.update(user.id, hashed_password=hashed_password)
         self._log_info("Password was changed", extra={'user_id': user.id})
 
@@ -33,9 +36,6 @@ class UserService(BaseService):
     def _same_users(first_user: UserBaseDTO, second_user: UserBaseDTO) -> bool:
         return (first_user.email == second_user.email
                 and first_user.name == second_user.name)
-
-
-
 
 
 
