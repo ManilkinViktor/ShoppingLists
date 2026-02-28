@@ -6,20 +6,20 @@ from sqlalchemy.orm import selectinload
 
 from database.models import WorkspacesOrm, ShoppingListsOrm, WorkspaceMembersOrm
 from database.models.workspace_members import Role
-from schemas.workspaces import WorkspaceDTO, WorkspaceAddDTO, WorkspaceRelListDTO
+from schemas.workspaces import WorkspaceDTO, WorkspaceCreateDTO, WorkspaceRelListDTO
 from database.repositories.base import BaseRepository
 
 class WorkspacesRepository(
     BaseRepository[
         WorkspacesOrm,
-        WorkspaceAddDTO,
+        WorkspaceCreateDTO,
         WorkspaceDTO
     ]):
 
     def __init__(self, _session: AsyncSession):
         super().__init__(
             _session,
-            _model=WorkspacesOrm, _add_dto=WorkspaceAddDTO, _dto=WorkspaceDTO
+            _model=WorkspacesOrm, _add_dto=WorkspaceCreateDTO, _dto=WorkspaceDTO
         )
 
 

@@ -1,14 +1,14 @@
 from uuid import UUID
 
-from schemas.workspaces import WorkspaceAddDTO, WorkspaceDTO
+from schemas.workspaces import WorkspaceCreateDTO, WorkspaceDTO
 from database.models.workspace_members import Role
 from services.base import BaseService
-from services.exceptions import ConflictUUID
+from services.exceptions import ConflictUUID, EntityNotFound
 
 
 class WorkspacesService(BaseService):
 
-    async def create(self, current_user: UUID, workspace_data: WorkspaceAddDTO) -> WorkspaceDTO:
+    async def create(self, current_user: UUID, workspace_data: WorkspaceCreateDTO) -> WorkspaceDTO:
         found_workspace: WorkspaceDTO = await self.uow.workspaces.get(workspace_data.id)
         if found_workspace:
             if self._same_workspaces(found_workspace, workspace_data):
@@ -25,9 +25,13 @@ class WorkspacesService(BaseService):
         return workspace
 
     @staticmethod
-    def _same_workspaces(first_workspace: WorkspaceDTO, second_workspace: WorkspaceAddDTO) -> bool:
+    def _same_workspaces(first_workspace: WorkspaceDTO, second_workspace: WorkspaceCreateDTO) -> bool:
         return all(
             getattr(first_workspace, field) == value
             for field, value in second_workspace
         )
 
+    async def sync_workspace(self, workspace_id: UUID, expected_version):
+        found_workspace: WorkspaceDTO = await self.uow.workspaces.get(workspace_id)
+        if not found_workspace:
+            raise EntityNotFound(type(WorkspaceDTO))

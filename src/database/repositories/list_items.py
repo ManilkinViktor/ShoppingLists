@@ -2,13 +2,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.repositories.base import BaseRepository
 from database.models import ListItemsOrm
-from schemas.list_items import ListItemDTO, ListItemAddDTO
+from schemas.list_items import ListItemDTO, ListItemCreateDTO
 
 
 class ListItemsRepository(
     BaseRepository[
         ListItemsOrm,
-        ListItemAddDTO,
+        ListItemCreateDTO,
         ListItemDTO
     ]):
 

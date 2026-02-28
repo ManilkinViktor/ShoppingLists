@@ -31,11 +31,11 @@ class PasswordWithConfirm(BaseModel):
         return self
 
 
-class UserAddDTO(PasswordWithConfirm, UserBaseDTO):
+class UserCreateDTO(PasswordWithConfirm, UserBaseDTO):
     pass
 
 
-class UserAddAuthDTO(UserBaseDTO):
+class UserCreateAuthDTO(UserBaseDTO):
     hashed_password: str
 
 

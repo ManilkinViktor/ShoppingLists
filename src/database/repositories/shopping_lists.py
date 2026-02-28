@@ -6,12 +6,12 @@ from sqlalchemy.orm import selectinload
 
 from database.repositories.base import BaseRepository
 from database.models import ShoppingListsOrm
-from schemas.shopping_lists import ShoppingListDTO, ShoppingListAddDTO, ShoppingListRelItemDTO
+from schemas.shopping_lists import ShoppingListDTO, ShoppingListCreateDTO, ShoppingListRelItemDTO
 
 class ShoppingListsRepository(
     BaseRepository[
         ShoppingListsOrm,
-        ShoppingListAddDTO,
+        ShoppingListCreateDTO,
         ShoppingListDTO,
     ]):
 

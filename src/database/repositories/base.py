@@ -4,22 +4,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import inspect, select, or_
 from sqlalchemy.exc import SQLAlchemyError
 
-
-from schemas.types import ModelOrm, AddDTO, DTO
+from database.base import Base
+from schemas.types import CreateDTO, DTO
 from core.logger import LoggerMeta, logging_method_exception
 
+ModelOrm = TypeVar('ModelOrm', bound=Base)
 
 
-class BaseRepository(Generic[ModelOrm, AddDTO, DTO], metaclass=LoggerMeta):
+class BaseRepository(Generic[ModelOrm, CreateDTO, DTO], metaclass=LoggerMeta):
     def __init__(self, _session: AsyncSession,
-                 _model: Type[ModelOrm], _add_dto: Type[AddDTO], _dto: Type[DTO]):
+                 _model: Type[ModelOrm], _add_dto: Type[CreateDTO], _dto: Type[DTO]):
         self._session = _session
         self._model = _model
         self._add_dto = _add_dto
         self._dto = _dto
 
     @logging_method_exception(SQLAlchemyError)
-    async def add(self, data: AddDTO) -> DTO:
+    async def add(self, data: CreateDTO) -> DTO:
         instance: ModelOrm = self._model(**data.model_dump())
         self._session.add(instance)
         await self._session.flush()

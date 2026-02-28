@@ -1,12 +1,12 @@
 from core.security import hash_password
 from services.base import BaseService
 from services.exceptions import EmailAlreadyExists, ConflictUUID
-from schemas.users import UserAddDTO, UserDTO, UserAddAuthDTO, UserBaseDTO
+from schemas.users import UserCreateDTO, UserDTO, UserCreateAuthDTO, UserBaseDTO
 
 
 class UserService(BaseService):
 
-    async def create(self, user_data: UserAddDTO) -> UserDTO:
+    async def create(self, user_data: UserCreateDTO) -> UserDTO:
         found_user: UserDTO | None = await self.uow.users.get_by_filters_or(email=user_data.email, id=user_data.id)
         if found_user:
             if user_data.id == found_user.id:
@@ -18,7 +18,7 @@ class UserService(BaseService):
             self._log_info(f"User wasn't created: email already exists", extra={'user_id': user_data.id})
             raise EmailAlreadyExists
         hashed_password: str = await hash_password(user_data.password)
-        user_auth_data: UserAddAuthDTO = UserAddAuthDTO(
+        user_auth_data: UserCreateAuthDTO = UserCreateAuthDTO(
             **user_data.model_dump(),
             hashed_password=hashed_password,
         )

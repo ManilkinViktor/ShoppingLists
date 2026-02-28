@@ -13,7 +13,7 @@ if str(SRC_PATH) not in sys.path:
 
 from database.repositories.workspaces import WorkspacesRepository
 from database.session import session_factory
-from schemas.workspaces import WorkspaceAddDTO
+from schemas.workspaces import WorkspaceCreateDTO
 
 
 def test_workspaces_repository_roundtrip() -> None:
@@ -27,7 +27,7 @@ async def _test_workspaces_repository_roundtrip() -> None:
         async with session_factory() as session:
             repository = WorkspacesRepository(session)
 
-            workspace_to_create = WorkspaceAddDTO(
+            workspace_to_create = WorkspaceCreateDTO(
                 id=workspace_id,
                 name="integration-test-workspace",
                 description="db roundtrip test",

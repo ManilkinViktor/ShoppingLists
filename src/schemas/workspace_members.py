@@ -10,13 +10,13 @@ if TYPE_CHECKING:
     from schemas.workspaces import WorkspaceRelListDTO
     from schemas.users import UserDTO
 
-class WorkspaceMemberAddDTO(BaseModel):
+class WorkspaceMemberCreateDTO(BaseModel):
     workspace_id: uuid.UUID
     user_id: uuid.UUID
     role: Role
 
 
-class WorkspaceMemberDTO(WorkspaceMemberAddDTO):
+class WorkspaceMemberDTO(WorkspaceMemberCreateDTO):
     joined_at: datetime.datetime
 
     @field_validator('joined_at')
