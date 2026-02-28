@@ -13,7 +13,7 @@ from api.http_exceptions import (
 from api.schemas.auth import TokenDTO, UserLoginDTO, UserRegisterDTO
 from core.security import create_refresh_token
 from core.config import settings
-from schemas.users import UserDTO, UserAddDTO
+from schemas.users import UserDTO, UserCreateDTO
 from services.auth import AuthService
 from services.users import UserService
 from services.exceptions import DomainException
@@ -29,7 +29,7 @@ async def register(
     uow: UoWDep,
 ) -> TokenDTO:
     user_service = UserService(uow)
-    user_data = UserAddDTO(id=uuid7(), **payload.model_dump())
+    user_data = UserCreateDTO(id=uuid7(), **payload.model_dump())
 
     try:
         user = await user_service.create(user_data)
