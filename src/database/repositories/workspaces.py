@@ -1,7 +1,7 @@
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update, case
 from sqlalchemy.orm import selectinload
 
 from database.models import WorkspacesOrm, ShoppingListsOrm, WorkspaceMembersOrm
@@ -58,3 +58,24 @@ class WorkspacesRepository(
 
 
         return accessible_workspaces
+
+    async def compare_and_bump_version(self, workspace_id: uuid.UUID, expected_version: int) -> bool:
+        """
+        compare workspace's version.
+        if workspace's versions are equal bump workspace version.
+        return: was change
+        """
+        stmt = (
+            update(WorkspacesOrm)
+            .where(WorkspacesOrm.id == workspace_id)
+            .values(
+                version=case(
+                    (WorkspacesOrm.version == expected_version, WorkspacesOrm.version + 1),
+                    else_=WorkspacesOrm.version
+                )
+            )
+            .returning(WorkspacesOrm.version)
+        )
+        result = await self._session.execute(stmt)
+        return bool(result.scalar_one_or_none())
+

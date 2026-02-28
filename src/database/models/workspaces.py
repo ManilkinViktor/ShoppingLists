@@ -10,7 +10,8 @@ from core.constants import FieldConstraints
 from database.mixins import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
-    from database.models import ShoppingListsOrm, WorkspaceMembersOrm
+    from database.models import ShoppingListsOrm, WorkspaceMembersOrm, \
+        WorkspaceChangesOrm
 
 
 
@@ -28,4 +29,8 @@ class WorkspacesOrm(UUIDMixin, TimestampMixin, Base):
 
     members_roles: Mapped[list['WorkspaceMembersOrm']] = relationship(
         back_populates='workspace',
+    )
+
+    changes: Mapped['WorkspaceChangesOrm'] = relationship(
+        back_populates='workspace'
     )

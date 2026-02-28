@@ -2,16 +2,16 @@ import uuid
 from typing import Annotated, TypeAlias
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from core.security import decode_token
 from database.uow import UnitOfWork
 from schemas.users import UserDTO
 
+UoWDep: TypeAlias = Annotated[UnitOfWork, Depends(UnitOfWork.get_with)]
 
 bearer_scheme = HTTPBearer(auto_error=False)
-
 
 def _unauthorized_exception() -> HTTPException:
     return HTTPException(
@@ -23,7 +23,7 @@ def _unauthorized_exception() -> HTTPException:
 
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
-    uow: UnitOfWork = Depends(UnitOfWork.get_with),
+    uow: UnitOfWork = UoWDep,
 ) -> UserDTO:
     if credentials is None:
         raise _unauthorized_exception()
@@ -57,4 +57,3 @@ async def get_current_user(
 
 
 CurrentUser: TypeAlias = Annotated[UserDTO, Depends(get_current_user)]
-UoWDep: TypeAlias = Annotated[UnitOfWork, Depends(UnitOfWork.get_with)]
