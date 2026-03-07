@@ -1,3 +1,4 @@
+from collections.abc import Collection
 from typing import Generic, TypeVar, Type, Any, Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -48,7 +49,23 @@ class BaseRepository(Generic[ModelOrm, CreateDTO, DTO], metaclass=LoggerMeta):
 
     @logging_method_exception(SQLAlchemyError)
     async def get_all(self, **filters) -> list[DTO]:
-        query = select(self._model).filter_by(**filters)
+        query = select(self._model)
+        if filters:
+            conditions = []
+            for key, value in filters.items():
+                column = getattr(self._model, key)
+                is_collection_filter = (
+                    isinstance(value, Collection)
+                    and not isinstance(value, (str, bytes, bytearray, dict))
+                )
+                if is_collection_filter:
+                    values = list(value)
+                    if not values:
+                        return []
+                    conditions.append(column.in_(values))
+                else:
+                    conditions.append(column == value)
+            query = query.where(*conditions)
         result = await self._session.execute(query)
         instances: Sequence[ModelOrm] = result.scalars().all()
         return [self._dto.model_validate(instance, from_attributes=True)

@@ -20,7 +20,11 @@ class EntityNotFound(DomainException):
     error_code: str = 'ENTITY_NOT_FOUND'
 
     def __init__(self, t: Type):
-        super()
-        self.public_message = f'{t.__class__.__name__} not found'
+        super().__init__()
+        type_name = t.__name__ if hasattr(t, '__name__') else t.__class__.__name__
+        self.public_message = f'{type_name} not found'
 
 
+class DuplicateWorkspaceSyncPayload(DomainException):
+    error_code: str = 'DUPLICATE_WORKSPACE_SYNC_PAYLOAD'
+    public_message: str = 'Sync payload must contain one item per workspace'

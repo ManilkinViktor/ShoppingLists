@@ -5,6 +5,7 @@ from services.exceptions import (
     ConflictUUID,
     DomainException,
     EmailAlreadyExists,
+    EntityNotFound,
     InvalidCredentials,
 )
 
@@ -25,6 +26,11 @@ def domain_to_http_exception(error: DomainException) -> HTTPException:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={'code': error.error_code, 'message': error.public_message},
             headers={'WWW-Authenticate': 'Bearer'},
+        )
+    if isinstance(error, EntityNotFound):
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={'code': error.error_code, 'message': error.public_message},
         )
     return HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,

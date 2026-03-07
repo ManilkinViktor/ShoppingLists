@@ -17,6 +17,15 @@ class ListItemCreateDTO(UUIDMixinDTO):
     category: str | None = Field(max_length=FieldConstraints.base_len)
     is_purchased: bool = Field(default=False)
 
+
+class ListItemPatchDTO(UUIDMixinDTO):
+    list_id: uuid.UUID | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=FieldConstraints.base_len)
+    quantity: int | None = Field(default=None, gt=0, lt=FieldConstraints.quantity_border)
+    unit: str | None = Field(default=None, max_length=FieldConstraints.base_len)
+    category: str | None = Field(default=None, max_length=FieldConstraints.base_len)
+    is_purchased: bool | None = None
+
 class ListItemDTO(ListItemCreateDTO, TimeStampMixinDTO):
     pass
 

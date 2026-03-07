@@ -7,6 +7,7 @@ from database.repositories.workspaces import WorkspacesRepository
 from database.repositories.workspace_members import WorkspaceMembersRepository
 from database.repositories.list_items import ListItemsRepository
 from database.repositories.shopping_lists import ShoppingListsRepository
+from database.repositories.workspace_changes import WorkspaceChangesRepository
 from database.repositories.users import UsersRepository
 from database.repositories.refresh_sessions import RefreshSessionsRepository
 
@@ -20,6 +21,7 @@ class UnitOfWork:
         self._workspace_members: WorkspaceMembersRepository | None = None
         self._shopping_lists: ShoppingListsRepository | None = None
         self._list_items: ListItemsRepository | None = None
+        self._workspace_changes: WorkspaceChangesRepository | None = None
         self._refresh_sessions: RefreshSessionsRepository | None = None
         self._aggregator_logs: list[tuple[Logger, dict[str, Any]]] = []
 
@@ -87,6 +89,12 @@ class UnitOfWork:
         if self._list_items is None:
             self._list_items = ListItemsRepository(self._session)
         return self._list_items
+
+    @property
+    def workspace_changes(self):
+        if self._workspace_changes is None:
+            self._workspace_changes = WorkspaceChangesRepository(self._session)
+        return self._workspace_changes
 
     @property
     def refresh_sessions(self):
