@@ -23,7 +23,7 @@ def _unauthorized_exception() -> HTTPException:
 
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
-    uow: UnitOfWork = UoWDep,
+    uow: UoWDep,
 ) -> UserDTO:
     if credentials is None:
         raise _unauthorized_exception()

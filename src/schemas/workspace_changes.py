@@ -51,7 +51,7 @@ class UnionOperation(RootModel):
         WorkspacePatchOperation,
         WorkspaceDeleteOperation,
         ShoppingListCreateOperation,
-        ShoppingListPatchDTO,
+        ShoppingListPatchOperation,
         ShoppingListDeleteOperation,
         ListItemCreateOperation,
         ListItemPatchOperation,
