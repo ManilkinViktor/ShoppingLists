@@ -25,7 +25,7 @@ class PasswordWithConfirm(BaseModel):
     password_confirmation: password_field
 
     @model_validator(mode='after')
-    def validate_password_confirmation(self):
+    def validate_password_confirmation(self) -> "PasswordWithConfirm":
         if self.password != self.password_confirmation:
             raise ValueError("The passwords don't match")
         return self

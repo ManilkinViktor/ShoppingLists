@@ -16,7 +16,7 @@ class UsersRepository(
         UserCreateAuthDTO,
         UserDTO
     ]):
-    def __init__(self, _session: AsyncSession):
+    def __init__(self, _session: AsyncSession) -> None:
         super().__init__(
             _session,
             _model=UsersOrm, _add_dto=UserCreateAuthDTO, _dto=UserDTO
@@ -33,7 +33,6 @@ class UsersRepository(
         result = await self._session.execute(query)
         instance: UsersOrm | None = result.scalar_one_or_none()
         return UserAuthDTO.model_validate(instance, from_attributes=True) if instance else None
-
 
 
 

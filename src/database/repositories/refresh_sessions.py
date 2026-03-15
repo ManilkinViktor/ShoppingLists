@@ -9,7 +9,7 @@ from utils.datetime_utils import utc_now
 
 
 class RefreshSessionsRepository:
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
     async def add(self, user_id: uuid.UUID, jti: uuid.UUID, expires_at: datetime.datetime) -> None:

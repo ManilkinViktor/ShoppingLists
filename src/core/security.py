@@ -18,13 +18,13 @@ async def hash_password(password: str) -> str:
     return await run_in_threadpool(_hash_password_sync, password)
 
 
-def _check_password_sync(password: str, hashed: str):
+def _check_password_sync(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(
         password.encode('utf-8'),
         hashed.encode('utf-8')
     )
 
-async def check_password(password: str, hashed: str):
+async def check_password(password: str, hashed: str) -> bool:
     return await run_in_threadpool(_check_password_sync, password, hashed)
 
 

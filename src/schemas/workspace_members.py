@@ -21,7 +21,7 @@ class WorkspaceMemberDTO(WorkspaceMemberCreateDTO):
 
     @field_validator('joined_at')
     @classmethod
-    def validate_joined_at(cls, v: datetime.datetime):
+    def validate_joined_at(cls, v: datetime.datetime) -> datetime.datetime:
         v = validate_utc_timezone(v)
         v = validate_not_future_time(v)
         return v

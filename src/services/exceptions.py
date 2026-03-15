@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Any, Type
 
 class DomainException(Exception):
     error_code: str
@@ -19,7 +19,7 @@ class ConflictUUID(DomainException):
 class EntityNotFound(DomainException):
     error_code: str = 'ENTITY_NOT_FOUND'
 
-    def __init__(self, t: Type):
+    def __init__(self, t: Type[Any]) -> None:
         super().__init__()
         type_name = t.__name__ if hasattr(t, '__name__') else t.__class__.__name__
         self.public_message = f'{type_name} not found'

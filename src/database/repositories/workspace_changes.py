@@ -8,10 +8,10 @@ from schemas.workspace_changes import WorkspaceChangeCreateDTO
 
 
 class WorkspaceChangesRepository:
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def add_many(self, changes: list[WorkspaceChangeCreateDTO]) -> None:
+    async def add_all(self, changes: list[WorkspaceChangeCreateDTO]) -> None:
         for workspace_change in changes:
             payload = [change.model_dump(mode='json') for change in workspace_change.changes]
             self._session.add(

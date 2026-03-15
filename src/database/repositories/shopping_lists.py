@@ -15,7 +15,7 @@ class ShoppingListsRepository(
         ShoppingListDTO,
     ]):
 
-    def __init__(self, _session: AsyncSession):
+    def __init__(self, _session: AsyncSession) -> None:
         super().__init__(
             _session,
             _model=ShoppingListsOrm, _add_dto=ShoppingListDTO, _dto=ShoppingListDTO

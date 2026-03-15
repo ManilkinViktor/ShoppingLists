@@ -1,6 +1,6 @@
 import datetime
 
-def utc_now():
+def utc_now() -> datetime.datetime:
     return datetime.datetime.now(datetime.UTC)
 
 
@@ -18,4 +18,3 @@ def validate_not_future_time(v: datetime.datetime) -> datetime.datetime:
     if v > utc_now():
         raise ValueError('datetime cannot be future')
     return v
-

@@ -21,7 +21,12 @@ class ListItemCreateDTO(UUIDMixinDTO):
 class ListItemPatchDTO(UUIDMixinDTO):
     list_id: uuid.UUID | None = None
     name: str | None = Field(default=None, min_length=1, max_length=FieldConstraints.base_len)
-    quantity: int | None = Field(default=None, gt=0, lt=FieldConstraints.quantity_border)
+    delta_quantity: int | None = Field(
+        default=None,
+        gt=-FieldConstraints.quantity_border,
+        lt=FieldConstraints.quantity_border,
+        description='Additive delta to apply to current quantity',
+    )
     unit: str | None = Field(default=None, max_length=FieldConstraints.base_len)
     category: str | None = Field(default=None, max_length=FieldConstraints.base_len)
     is_purchased: bool | None = None

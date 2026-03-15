@@ -33,8 +33,8 @@ async def get_current_user(
 
     try:
         payload = decode_token(credentials.credentials)
-    except jwt.PyJWTError:
-        raise _unauthorized_exception()
+    except jwt.PyJWTError as error:
+        raise _unauthorized_exception() from None
 
     token_type = payload.get('type')
     if token_type != 'access':
@@ -46,8 +46,8 @@ async def get_current_user(
 
     try:
         user_id = uuid.UUID(subject)
-    except ValueError:
-        raise _unauthorized_exception()
+    except ValueError as error:
+        raise _unauthorized_exception() from None
 
     user = await uow.users.get(user_id)
     if user is None or user.deleted_at is not None:
@@ -57,3 +57,4 @@ async def get_current_user(
 
 
 CurrentUser: TypeAlias = Annotated[UserDTO, Depends(get_current_user)]
+

@@ -15,7 +15,7 @@ class UserService(BaseService):
                 else:
                     self._log_info("Conflict uuid")
                     raise ConflictUUID
-            self._log_info(f"User wasn't created: email already exists", extra={'user_id': user_data.id})
+            self._log_info("User wasn't created: email already exists", extra={'user_id': user_data.id})
             raise EmailAlreadyExists
         hashed_password: str = await hash_password(user_data.password)
         user_auth_data: UserCreateAuthDTO = UserCreateAuthDTO(
@@ -23,11 +23,11 @@ class UserService(BaseService):
             hashed_password=hashed_password,
         )
         user: UserDTO = await self.uow.users.add(user_auth_data)
-        self._log_info(f"User was created", extra={'user_id': user_data.id})
+        self._log_info("User was created", extra={'user_id': user_data.id})
         return user
 
 
-    async def change_password(self, user: UserDTO, password: str):
+    async def change_password(self, user: UserDTO, password: str) -> None:
         hashed_password = await hash_password(password)
         await self.uow.users.update(user.id, hashed_password=hashed_password)
         self._log_info("Password was changed", extra={'user_id': user.id})
@@ -36,13 +36,6 @@ class UserService(BaseService):
     def _same_users(first_user: UserBaseDTO, second_user: UserBaseDTO) -> bool:
         return (first_user.email == second_user.email
                 and first_user.name == second_user.name)
-
-
-
-
-
-
-
 
 
 

@@ -37,9 +37,9 @@ async def register(
         await uow.refresh_sessions.add(user.id, refresh_jti, refresh_expires_at)
         await uow.commit()
     except DomainException as error:
-        raise domain_to_http_exception(error)
+        raise domain_to_http_exception(error) from None
     except IntegrityError as error:
-        raise integrity_error_to_http_exception(error)
+        raise integrity_error_to_http_exception(error) from None
 
     set_refresh_cookie(response, refresh_token)
     return build_access_token_response(user)
@@ -58,9 +58,9 @@ async def login(
         await uow.refresh_sessions.add(user.id, refresh_jti, refresh_expires_at)
         await uow.commit()
     except DomainException as error:
-        raise domain_to_http_exception(error)
+        raise domain_to_http_exception(error) from None
     except IntegrityError as error:
-        raise integrity_error_to_http_exception(error)
+        raise integrity_error_to_http_exception(error) from None
 
     set_refresh_cookie(response, refresh_token)
     return build_access_token_response(user)
@@ -94,7 +94,7 @@ async def refresh(
         await uow.refresh_sessions.add(user.id, new_refresh_jti, new_refresh_expires_at)
         await uow.commit()
     except IntegrityError as error:
-        raise integrity_error_to_http_exception(error)
+        raise integrity_error_to_http_exception(error) from None
 
     set_refresh_cookie(response, new_refresh_token)
     return build_access_token_response(user)
@@ -124,3 +124,5 @@ async def logout(
 @router.get('/me', response_model=UserDTO)
 async def get_me(current_user: CurrentUser) -> UserDTO:
     return current_user
+
+

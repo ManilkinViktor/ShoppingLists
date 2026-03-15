@@ -1,7 +1,7 @@
 import logging
 import sys
 from abc import ABCMeta
-from typing import Any
+from typing import Any, Callable
 from functools import wraps
 import asyncio
 
@@ -16,7 +16,7 @@ class AsyncHandler(logging.Handler):
     }
     COLOR_RESET = '\033[0m'
 
-    def __init__(self, queue_size: int = 1000):
+    def __init__(self, queue_size: int = 1000) -> None:
         super().__init__()
         self.loop: asyncio.AbstractEventLoop | None = None
         self.queue: asyncio.Queue[str] = asyncio.Queue(maxsize=queue_size)
@@ -125,14 +125,16 @@ class LoggerMeta(ABCMeta):
         return super().__new__(mcs, name, bases, namespace, **kwargs)
 
 
-def logging_method_exception(exception_types: type[Exception] | tuple[type[Exception]]):
+def logging_method_exception(
+    exception_types: type[Exception] | tuple[type[Exception]],
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     decorator used for methods, need attr cls.logger
     """
 
-    def decorator(func):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        def wrapper(self_or_cls, *args, **kwargs):
+        def wrapper(self_or_cls: Any, *args: Any, **kwargs: Any) -> Any:
             logger: logging.Logger | None = None
             if hasattr(self_or_cls, 'logger'):
                 logger = self_or_cls.logger
@@ -140,10 +142,10 @@ def logging_method_exception(exception_types: type[Exception] | tuple[type[Excep
                 logger = self_or_cls.__class__.logger
             try:
                 return func(self_or_cls, *args, **kwargs)
-            except exception_types as e:
+            except exception_types as error:
                 if logger:
-                    logger.exception(e)
-                raise e
+                    logger.exception(error)
+                raise
         return wrapper
 
     return decorator

@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from database.base import Base
 from schemas.types import CreateDTO, DTO
 from core.logger import LoggerMeta, logging_method_exception
+from utils.datetime_utils import utc_now
 
 ModelOrm = TypeVar('ModelOrm', bound=Base)
 
@@ -20,29 +21,53 @@ class BaseRepository(Generic[ModelOrm, CreateDTO, DTO], metaclass=LoggerMeta):
         self._add_dto = _add_dto
         self._dto = _dto
 
+    def _get_pk_filter(self, data: CreateDTO) -> dict:
+        """Автоматически собирает фильтр по первичному ключу из DTO."""
+        mapper = inspect(self._model)
+        pk_columns = [c.key for c in mapper.primary_key]
+        return {pk: getattr(data, pk, None) for pk in pk_columns if getattr(data, pk, None) is not None}
+
     @logging_method_exception(SQLAlchemyError)
     async def add(self, data: CreateDTO) -> DTO:
-        instance: ModelOrm = self._model(**data.model_dump())
-        self._session.add(instance)
+        pk_filter = self._get_pk_filter(data)
+        instance = await self._session.get(self._model, pk_filter)
+
+        if instance:
+            if hasattr(instance, "deleted_at") and instance.deleted_at is not None:
+                for key, value in data.model_dump(exclude=set(pk_filter.keys())).items():
+                    setattr(instance, key, value)
+                instance.deleted_at = None
+        else:
+            instance = self._model(**data.model_dump())
+            self._session.add(instance)
+
         await self._session.flush()
         return self._dto.model_validate(instance, from_attributes=True)
 
     @logging_method_exception(SQLAlchemyError)
     async def get(self, id_value: Any) -> DTO | None:
-        instance: ModelOrm = await self._session.get(self._model, id_value)
+        instance = await self._session.get(self._model, id_value)
+        if instance and getattr(instance, "deleted_at", None) is not None:
+            return None
         return self._dto.model_validate(instance, from_attributes=True) if instance else None
 
     @logging_method_exception(SQLAlchemyError)
     async def get_by(self, **filters) -> DTO | None:
         query = select(self._model).filter_by(**filters)
+        if hasattr(self._model, "deleted_at"):
+            query = query.where(self._model.deleted_at.is_(None))
         result = await self._session.execute(query)
         instance: ModelOrm = result.scalar_one_or_none()
         return self._dto.model_validate(instance, from_attributes=True) if instance else None
 
-    @logging_method_exception
+    @logging_method_exception(SQLAlchemyError)
     async def get_by_filters_or(self, **filters_or) -> DTO | None:
         conditions = [getattr(self._model, key) == value for key, value in filters_or.items()]
         stmt = select(self._model).where(or_(*conditions))
+
+        if hasattr(self._model, "deleted_at"):
+            stmt = stmt.where(self._model.deleted_at.is_(None))
+
         result = await self._session.execute(stmt)
         instance: ModelOrm = result.scalar_one_or_none()
         return self._dto.model_validate(instance, from_attributes=True) if instance else None
@@ -50,26 +75,26 @@ class BaseRepository(Generic[ModelOrm, CreateDTO, DTO], metaclass=LoggerMeta):
     @logging_method_exception(SQLAlchemyError)
     async def get_all(self, **filters) -> list[DTO]:
         query = select(self._model)
+        if hasattr(self._model, "deleted_at"):
+            query = query.where(self._model.deleted_at.is_(None))
         if filters:
             conditions = []
             for key, value in filters.items():
+                if not hasattr(self._model, key): continue
                 column = getattr(self._model, key)
-                is_collection_filter = (
-                    isinstance(value, Collection)
-                    and not isinstance(value, (str, bytes, bytearray, dict))
+                is_collection = (
+                        isinstance(value, Collection)
+                        and not isinstance(value, (str, bytes, bytearray, dict))
                 )
-                if is_collection_filter:
-                    values = list(value)
-                    if not values:
-                        return []
-                    conditions.append(column.in_(values))
+                if is_collection:
+                    if not value: return []
+                    conditions.append(column.in_(list(value)))
                 else:
                     conditions.append(column == value)
             query = query.where(*conditions)
         result = await self._session.execute(query)
-        instances: Sequence[ModelOrm] = result.scalars().all()
-        return [self._dto.model_validate(instance, from_attributes=True)
-                for instance in instances]
+        instances = result.scalars().all()
+        return [self._dto.model_validate(instance, from_attributes=True) for instance in instances]
 
     @logging_method_exception(SQLAlchemyError)
     async def _exists(self, get_instance: ModelOrm) -> bool:
@@ -79,16 +104,23 @@ class BaseRepository(Generic[ModelOrm, CreateDTO, DTO], metaclass=LoggerMeta):
 
     @logging_method_exception(SQLAlchemyError)
     async def update(self, id_value: Any, **update_data) -> DTO | None:
-        instance: ModelOrm = await self._session.get(self._model, id_value)
-        if instance:
+        instance = await self._session.get(self._model, id_value)
+        if instance and getattr(instance, "deleted_at", None) is None:
             for key, value in update_data.items():
-                if not(value is None) and hasattr(instance, key):
+                if value is not None and hasattr(instance, key):
                     setattr(instance, key, value)
-        return self._dto.model_validate(instance, from_attributes=True) if instance else None
+            await self._session.flush()
+            return self._dto.model_validate(instance, from_attributes=True)
+        return None
 
     @logging_method_exception(SQLAlchemyError)
     async def delete(self, id_value: Any) -> bool:
-        instance: ModelOrm = await self._session.get(self._model, id_value)
-        if instance:
-            await self._session.delete(instance)
-        return bool(instance)
+        instance = await self._session.get(self._model, id_value)
+        if instance and getattr(instance, "deleted_at", None) is None:
+            if hasattr(instance, "deleted_at"):
+                instance.deleted_at = utc_now()
+            else:
+                await self._session.delete(instance)
+            await self._session.flush()
+            return True
+        return False
