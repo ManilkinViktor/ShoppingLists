@@ -1,4 +1,4 @@
-import asyncio
+import pytest
 import uuid
 from pathlib import Path
 import sys
@@ -12,15 +12,13 @@ if str(SRC_PATH) not in sys.path:
     sys.path.append(str(SRC_PATH))
 
 from database.repositories.workspaces import WorkspacesRepository
-from database.session import session_factory
 from schemas.workspaces import WorkspaceCreateDTO
 
-
-def test_workspaces_repository_roundtrip() -> None:
-    asyncio.run(_test_workspaces_repository_roundtrip())
+from conftest import session_factory
 
 
-async def _test_workspaces_repository_roundtrip() -> None:
+@pytest.mark.asyncio
+async def test_workspaces_repository_roundtrip() -> None:
     workspace_id = uuid.UUID(str(uuid7()))
 
     try:
