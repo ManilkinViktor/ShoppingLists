@@ -29,7 +29,7 @@ async def register(
     uow: UoWDep,
 ) -> TokenDTO:
     user_service = UserService(uow)
-    user_data = UserCreateDTO(id=uuid7(), **payload.model_dump())
+    user_data = UserCreateDTO(id=str(uuid7()), **payload.model_dump())
 
     try:
         user = await user_service.create(user_data)

@@ -1,6 +1,6 @@
 ﻿from uuid import UUID
 
-from database.models.workspace_members import Role
+from core.enums import Role
 from database.uow import UnitOfWork
 from services.base import BaseService
 from services.exceptions import ConflictUUID, EntityNotFound
@@ -16,6 +16,23 @@ class ListItemsService(BaseService):
 
     def set_editable_workspace_ids(self, editable_workspace_ids: set[UUID] | None) -> None:
         self._editable_workspace_ids = editable_workspace_ids
+
+    async def _ensure_member_access(
+        self,
+        current_user: UUID,
+        workspace_id: UUID,
+        entity_type: type,
+    ) -> None:
+        member = await self.uow.workspace_members.get_by(
+            user_id=current_user,
+            workspace_id=workspace_id,
+        )
+        if not member:
+            self._log_warning(
+                "User doesn't have access to list item",
+                extra={'workspace_id': workspace_id, 'user_id': current_user},
+            )
+            raise EntityNotFound(entity_type)
 
     async def _ensure_editor_access(self, current_user: UUID, workspace_id: UUID) -> None:
         if self._editable_workspace_ids is not None:
@@ -106,3 +123,26 @@ class ListItemsService(BaseService):
             self._log_warning("List item not found", extra={'item_id': item_id})
             raise EntityNotFound(ListItemDTO)
         self._log_info("List item was deleted", extra={'item_id': item_id})
+
+    async def list_for_user(
+        self,
+        list_id: UUID,
+        current_user: UUID,
+    ) -> list[ListItemDTO]:
+        workspace_id = await self._get_workspace_id_for_list(list_id)
+        await self._ensure_member_access(current_user, workspace_id, ShoppingListDTO)
+        return await self.uow.list_items.get_all(list_id=list_id)
+
+    async def get_for_user(
+        self,
+        list_id: UUID,
+        item_id: UUID,
+        current_user: UUID,
+    ) -> ListItemDTO:
+        item = await self.uow.list_items.get(item_id)
+        if not item or item.list_id != list_id:
+            self._log_warning("List item not found", extra={'item_id': item_id})
+            raise EntityNotFound(ListItemDTO)
+        workspace_id = await self._get_workspace_id_for_list(item.list_id)
+        await self._ensure_member_access(current_user, workspace_id, ListItemDTO)
+        return item

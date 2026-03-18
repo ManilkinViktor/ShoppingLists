@@ -2,8 +2,13 @@ from uuid import UUID
 from typing import Protocol, TypeVar
 
 from schemas.workspaces import WorkspaceDTO
-from schemas.workspace_changes import UnionOperation, WorkspaceChangeCreateDTO, WorkspaceSyncResultDTO
-from database.models.workspace_members import Role
+from schemas.workspace_changes import (
+    UnionOperation,
+    WorkspaceChangeCreateDTO,
+    WorkspaceVersionDTO,
+    WorkspacePushResultDTO,
+)
+from core.enums import Role
 from services.base import BaseService
 from services.exceptions import DuplicateWorkspaceSyncPayload, EntityNotFound
 from database.uow import UnitOfWork
@@ -40,6 +45,21 @@ class WorkspaceSyncService(BaseService):
         workspace_changes: list[WorkspaceChangeCreateDTO],
     ) -> tuple[list[UUID], set[UUID]]:
         workspace_ids: list[UUID] = [change.workspace_id for change in workspace_changes]
+        requested_workspace_ids: set[UUID] = set(workspace_ids)
+        if len(requested_workspace_ids) != len(workspace_ids):
+            self._log_warning(
+                'Sync payload has duplicate workspace_id values',
+                extra={'user_id': current_user},
+            )
+            raise DuplicateWorkspaceSyncPayload
+        return workspace_ids, requested_workspace_ids
+
+    def _get_requested_workspace_versions(
+        self,
+        current_user: UUID,
+        workspace_versions: list[WorkspaceVersionDTO],
+    ) -> tuple[list[UUID], set[UUID]]:
+        workspace_ids: list[UUID] = [entry.workspace_id for entry in workspace_versions]
         requested_workspace_ids: set[UUID] = set(workspace_ids)
         if len(requested_workspace_ids) != len(workspace_ids):
             self._log_warning(
@@ -196,34 +216,45 @@ class WorkspaceSyncService(BaseService):
             operations.extend(required_change.changes)
         return required_operations_by_workspace
 
-    @staticmethod
-    def _build_sync_result(
-        workspace_ids: list[UUID],
-        accepted_workspace_ids: set[UUID],
-        required_operations_by_workspace: dict[UUID, list[UnionOperation]],
-    ) -> list[WorkspaceSyncResultDTO]:
-        sync_result: list[WorkspaceSyncResultDTO] = []
-        for workspace_id in workspace_ids:
-            accepted = workspace_id in accepted_workspace_ids
-            changes = required_operations_by_workspace.get(workspace_id, [])
-            sync_result.append(
-                WorkspaceSyncResultDTO(
-                    workspace_id=workspace_id,
-                    accepted=accepted,
-                    changes=changes,
-                )
-            )
-        return sync_result
 
-    async def sync(
+    async def pull_changes(
+        self,
+        current_user: UUID,
+        workspace_versions: list[WorkspaceVersionDTO],
+    ) -> list[WorkspaceChangeCreateDTO]:
+        _requested_ordered, requested_workspace_ids = self._get_requested_workspace_versions(
+            current_user,
+            workspace_versions,
+        )
+        accessible_workspace_ids, _editable_workspace_ids = await self._get_accessible_workspace_ids(
+            current_user
+        )
+        inaccessible_workspace_ids = requested_workspace_ids - accessible_workspace_ids
+        if inaccessible_workspace_ids:
+            workspace_id: UUID = next(iter(inaccessible_workspace_ids))
+            self._log_warning(
+                "User doesn't have access to workspace sync",
+                extra={'workspace_id': workspace_id, 'user_id': current_user},
+            )
+            raise EntityNotFound(WorkspaceDTO)
+        request_versions: dict[UUID, int] = {
+            entry.workspace_id: entry.workspace_version for entry in workspace_versions
+        }
+        request_versions_full: dict[UUID, int] = {
+            workspace_id: request_versions.get(workspace_id, 0)
+            for workspace_id in accessible_workspace_ids
+        }
+        return await self.uow.workspace_changes.get_since_versions(request_versions_full)
+
+    async def push_changes(
         self,
         current_user: UUID,
         workspace_changes: list[WorkspaceChangeCreateDTO],
-    ) -> list[WorkspaceSyncResultDTO]:
+    ) -> list[WorkspacePushResultDTO]:
         (
             requested_workspace_ids_ordered,
             requested_workspace_ids,
-            accessible_workspace_ids,
+            _accessible_workspace_ids,
             editable_workspace_ids,
         ) = await self._ensure_workspace_access(
             current_user, workspace_changes
@@ -231,24 +262,24 @@ class WorkspaceSyncService(BaseService):
         self._workspaces_service.set_editable_workspace_ids(editable_workspace_ids)
         self._shopping_lists_service.set_editable_workspace_ids(editable_workspace_ids)
         self._list_items_service.set_editable_workspace_ids(editable_workspace_ids)
+
         request_versions: dict[UUID, int] = {
             change.workspace_id: change.workspace_version for change in workspace_changes
         }
         requested_workspace_ids_with_changes: set[UUID] = {
             change.workspace_id for change in workspace_changes if change.changes
         }
-        outdated_workspace_ids, request_versions_full = await self._primary_version_check(
-            accessible_workspace_ids,
+        outdated_workspace_ids, _request_versions_full = await self._primary_version_check(
+            requested_workspace_ids,
             request_versions,
         )
-        outdated_workspace_ids &= requested_workspace_ids
         non_editable_requested_ids: set[UUID] = (
             requested_workspace_ids_with_changes - editable_workspace_ids
         )
         eligible_workspace_ids: set[UUID] = (
             requested_workspace_ids - outdated_workspace_ids - non_editable_requested_ids
         )
-        new_changes, expected_bump_versions, bumped_workspace_versions = await self._apply_changes(
+        _new_changes, expected_bump_versions, bumped_workspace_versions = await self._apply_changes(
             current_user, workspace_changes, eligible_workspace_ids
         )
         outdated_workspace_ids = self._finalize_bump_versions(
@@ -256,25 +287,13 @@ class WorkspaceSyncService(BaseService):
             expected_bump_versions,
             bumped_workspace_versions,
         )
-        required_operations_by_workspace: dict[UUID, list[UnionOperation]] = (
-            await self._get_required_sync_changes(outdated_workspace_ids, request_versions_full)
-        )
         accepted_workspace_ids: set[UUID] = (
             requested_workspace_ids - outdated_workspace_ids - non_editable_requested_ids
         )
-        response_workspace_ids: list[UUID] = requested_workspace_ids_ordered
-
-        self._log_info(
-            'Workspace changes were synced',
-            extra={
-                'changes_count': len(new_changes),
-                'outdated_workspaces_count': len(outdated_workspace_ids),
-                'user_id': current_user,
-            },
-        )
-
-        return self._build_sync_result(
-            response_workspace_ids,
-            accepted_workspace_ids,
-            required_operations_by_workspace,
-        )
+        return [
+            WorkspacePushResultDTO(
+                workspace_id=workspace_id,
+                accepted=workspace_id in accepted_workspace_ids,
+            )
+            for workspace_id in requested_workspace_ids_ordered
+        ]

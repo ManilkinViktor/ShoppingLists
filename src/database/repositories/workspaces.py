@@ -5,7 +5,7 @@ from sqlalchemy import select, tuple_, update
 from sqlalchemy.orm import selectinload
 
 from database.models import WorkspacesOrm, ShoppingListsOrm, WorkspaceMembersOrm
-from database.models.workspace_members import Role
+from core.enums import Role
 from schemas.workspaces import WorkspaceDTO, WorkspaceCreateDTO, WorkspaceRelListDTO
 from database.repositories.base import BaseRepository
 
@@ -37,7 +37,29 @@ class WorkspacesRepository(
         workspace: WorkspacesOrm = result.scalar_one_or_none()
         return WorkspaceRelListDTO.model_validate(workspace, from_attributes=True) if workspace else None
 
-    async def get_accessible_user_workspaces_with_lists(self, user_id: uuid.UUID) -> list[tuple[WorkspaceRelListDTO, Role]]:
+    async def get_accessible_user_workspaces(
+        self,
+        user_id: uuid.UUID,
+    ) -> list[WorkspaceDTO]:
+        """Return accessible users workspaces without nested lists/items."""
+        query = (
+            select(WorkspacesOrm)
+            .join(WorkspaceMembersOrm, WorkspacesOrm.id == WorkspaceMembersOrm.workspace_id)
+            .where(WorkspaceMembersOrm.user_id == user_id)
+        )
+        if hasattr(WorkspacesOrm, "deleted_at"):
+            query = query.where(WorkspacesOrm.deleted_at.is_(None))
+        result = await self._session.execute(query)
+        workspaces = result.scalars().all()
+        return [
+            WorkspaceDTO.model_validate(workspace, from_attributes=True)
+            for workspace in workspaces
+        ]
+
+    async def get_accessible_user_workspaces_with_lists(
+        self,
+        user_id: uuid.UUID,
+    ) -> list[WorkspaceRelListDTO]:
         """Return accessible users workspaces with role and list together list's items"""
         query = (
             select(WorkspacesOrm, WorkspaceMembersOrm.role.label('role'))
@@ -50,11 +72,12 @@ class WorkspacesRepository(
 
         )
         result = await self._session.execute(query)
-        accessible_workspaces: list[tuple[WorkspaceRelListDTO, Role]] = []
+        accessible_workspaces: list[WorkspaceRelListDTO] = []
         for row in result:
             workspace: WorkspacesOrm = row[0]
             role: Role = row.role
-            accessible_workspaces.append((WorkspaceRelListDTO.model_validate(workspace), role))
+            workspace_dto = WorkspaceRelListDTO.model_validate(workspace, from_attributes=True)
+            accessible_workspaces.append(workspace_dto.model_copy(update={'role': role}))
 
 
         return accessible_workspaces

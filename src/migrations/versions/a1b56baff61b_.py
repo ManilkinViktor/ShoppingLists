@@ -69,7 +69,7 @@ def upgrade() -> None:
         sa.Column(
             "role", sa.Enum("viewer", "editor", name="role"), nullable=False
         ),
-        sa.Column("joined_at", sa.DateTime(), nullable=False),
+        sa.Column("joined_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(
             ["workspace_id"], ["workspaces.id"], ondelete="CASCADE"
