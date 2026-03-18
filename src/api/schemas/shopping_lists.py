@@ -1,8 +1,22 @@
-from pydantic import Field
+import uuid
+
+from pydantic import BaseModel, Field
 
 from api.schemas.list_items import ListItemCreateRequestDTO
-from schemas.shopping_lists import ShoppingListCreateDTO
+from schemas.mixins import UUIDMixinDTO
+from core.constants import FieldConstraints
 
 
-class ShoppingListCreateWithItemsDTO(ShoppingListCreateDTO):
+class ShoppingListCreateRequestDTO(UUIDMixinDTO):
+    workspace_id: uuid.UUID
+    name: str = Field(min_length=1, max_length=FieldConstraints.base_len)
+    description: str | None = Field(max_length=FieldConstraints.base_len)
+
+
+class ShoppingListCreateWithItemsDTO(ShoppingListCreateRequestDTO):
     items: list[ListItemCreateRequestDTO] = Field(default_factory=list)
+
+
+class ShoppingListPatchRequestDTO(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=FieldConstraints.base_len)
+    description: str | None = Field(default=None, max_length=FieldConstraints.base_len)

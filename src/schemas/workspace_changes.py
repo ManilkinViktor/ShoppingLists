@@ -66,6 +66,16 @@ class WorkspaceChangeCreateDTO(BaseModel):
     changes: list[UnionOperation]
 
 
+class WorkspaceVersionDTO(BaseModel):
+    workspace_id: uuid.UUID
+    workspace_version: int = Field(ge=0)
+
+
+class WorkspacePushResultDTO(BaseModel):
+    workspace_id: uuid.UUID
+    accepted: bool
+
+
 class WorkspaceSyncResultDTO(BaseModel):
     workspace_id: uuid.UUID
     accepted: bool

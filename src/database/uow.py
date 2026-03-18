@@ -47,7 +47,7 @@ class UnitOfWork:
         self._aggregator_logs.append((logger_obj, {
             'level': level,
             'msg': msg,
-            'agrs': args,
+            'args': args,
             'kwargs': kwargs,
         }))
 

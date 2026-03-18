@@ -7,7 +7,7 @@ from fastapi.concurrency import run_in_threadpool
 import jwt
 
 from core.config import settings
-
+from utils.datetime_utils import utc_now
 
 def _hash_password_sync(password: str) -> str:
     salt = bcrypt.gensalt()
@@ -29,7 +29,7 @@ async def check_password(password: str, hashed: str) -> bool:
 
 
 def _create_token(subject: uuid.UUID, token_type: str, expires_minutes: int) -> str:
-    now = datetime.datetime.now(datetime.UTC)
+    now = utc_now()
     payload = {
         'sub': str(subject),
         'type': token_type,

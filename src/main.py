@@ -4,7 +4,10 @@ import uvicorn
 from api.auth import router as auth_router
 from api.shopping_lists import router as shopping_lists_router
 from api.workspaces import router as workspaces_router
+from schemas import rebuild_models
 
+
+rebuild_models()
 
 app = FastAPI(title='ShoppingLists API')
 app.include_router(auth_router)

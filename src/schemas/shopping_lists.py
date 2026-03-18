@@ -14,14 +14,11 @@ class ShoppingListCreateDTO(UUIDMixinDTO):
     workspace_id: uuid.UUID
     name: str = Field(min_length=1, max_length=FieldConstraints.base_len)
     description: str | None = Field(max_length=FieldConstraints.base_len)
-    created_by: uuid.UUID | None
-
-
+    created_by: uuid.UUID | None = None
+    
 class ShoppingListPatchDTO(UUIDMixinDTO):
-    workspace_id: uuid.UUID | None = None
     name: str | None = Field(default=None, min_length=1, max_length=FieldConstraints.base_len)
     description: str | None = Field(default=None, max_length=FieldConstraints.base_len)
-    created_by: uuid.UUID | None = None
 
 class ShoppingListDTO(ShoppingListCreateDTO, TimeStampMixinDTO):
     pass
@@ -31,3 +28,4 @@ class ShoppingListRelItemDTO(ShoppingListDTO):
 
 class ShoppingListRelWorkspaceDTO(ShoppingListDTO):
     workspace: 'WorkspaceRelUserDTO | None'
+

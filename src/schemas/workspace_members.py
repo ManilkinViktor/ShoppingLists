@@ -2,7 +2,7 @@ import datetime
 from typing import TYPE_CHECKING
 import uuid
 
-from database.models.workspace_members import Role
+from core.enums import Role
 from pydantic import BaseModel, field_validator
 from utils.datetime_utils import validate_utc_timezone, validate_not_future_time
 

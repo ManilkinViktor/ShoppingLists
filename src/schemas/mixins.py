@@ -21,7 +21,7 @@ class TimeStampMixinDTO(BaseModel):
 
 
 class UUIDMixinDTO(BaseModel):
-    id: uuid.UUID
+    id: uuid.UUID | str
     _uuid_version: ClassVar[int] = 7
 
     @field_validator('id')
