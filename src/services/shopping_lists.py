@@ -2,6 +2,14 @@
 
 from core.enums import Role
 from database.uow import UnitOfWork
+from schemas.list_items import ListItemCreateDTO, ListItemsCreateDTO
+from schemas.workspace_changes import (
+    ListItemsCreateOperation,
+    ShoppingListCreateOperation,
+    ShoppingListDeleteOperation,
+    ShoppingListPatchOperation,
+    UnionOperation,
+)
 from services.base import BaseService
 from services.exceptions import ConflictUUID, EntityNotFound
 from schemas.shopping_lists import (
@@ -10,6 +18,7 @@ from schemas.shopping_lists import (
     ShoppingListDTO,
     ShoppingListRelItemDTO,
 )
+from services.list_items import ListItemsService
 
 
 class ShoppingListsService(BaseService):
@@ -77,43 +86,196 @@ class ShoppingListsService(BaseService):
             for field, value in second_list
         )
 
-    async def create(self, create_data: ShoppingListCreateDTO, current_user: UUID) -> ShoppingListDTO:
+    async def _create_core(
+        self,
+        create_data: ShoppingListCreateDTO,
+        current_user: UUID,
+        *,
+        deferred: bool,
+    ) -> ShoppingListDTO | None:
         create_data = create_data.model_copy(update={'created_by': current_user})
         await self._ensure_editor_access(current_user, create_data.workspace_id)
+
         found_list: ShoppingListDTO | None = await self.uow.shopping_lists.get(create_data.id)
         if found_list:
             if self._same_lists(found_list, create_data):
                 self._log_info("Shopping list already exists", extra={'list_id': found_list.id})
-                return found_list
+                return None if deferred else found_list
             self._log_warning("Conflict uuid: shopping list with same uuid and another data exists")
             raise ConflictUUID
+
+        if deferred:
+            await self.uow.shopping_lists.add_deferred(create_data)
+            self._log_info("Shopping list was created", extra={'list_id': create_data.id})
+            return None
+
         created = await self.uow.shopping_lists.add(create_data)
         self._log_info("Shopping list was created", extra={'list_id': created.id})
         return created
 
-    async def patch(self, patch_data: ShoppingListPatchDTO, current_user: UUID) -> ShoppingListDTO:
+    async def create(
+        self,
+        create_data: ShoppingListCreateDTO,
+        current_user: UUID,
+        *,
+        expected_workspace_version: int | None = None,
+        record_change: bool = False,
+        items: list[ListItemCreateDTO] | None = None,
+    ) -> ShoppingListDTO:
+        normalized_create_data = create_data.model_copy(update={'created_by': current_user})
+        await self._ensure_editor_access(current_user, normalized_create_data.workspace_id)
+        found_list = await self.uow.shopping_lists.get(create_data.id)
+        has_create = found_list is None
+
+        new_version: int | None = None
+        if has_create and expected_workspace_version is not None:
+            new_version = await self._bump_workspace_version_or_raise(
+                normalized_create_data.workspace_id,
+                expected_workspace_version,
+            )
+
+        created = await self._create_core(create_data, current_user, deferred=False)
+        assert created is not None
+
+        changes: list[UnionOperation] = []
+        if record_change and new_version is not None and has_create:
+            changes.append(
+                UnionOperation(
+                    root=ShoppingListCreateOperation(
+                        data=ShoppingListCreateDTO(
+                            id=normalized_create_data.id,
+                            workspace_id=normalized_create_data.workspace_id,
+                            name=normalized_create_data.name,
+                            description=normalized_create_data.description,
+                            created_by=normalized_create_data.created_by,
+                        ),
+                    )
+                )
+            )
+
+        if items:
+            list_items_service = ListItemsService(self.uow)
+            prepared_items = [item.model_copy(update={'list_id': created.id}) for item in items]
+            await list_items_service.create(
+                ListItemsCreateDTO(
+                    list_id=created.id,
+                    items=prepared_items,
+                ),
+                current_user,
+            )
+            if record_change and new_version is not None:
+                changes.append(
+                    UnionOperation(
+                        root=ListItemsCreateOperation(
+                            data=ListItemsCreateDTO(
+                                list_id=created.id,
+                                items=prepared_items,
+                            ),
+                        )
+                    )
+                )
+
+        if changes and new_version is not None:
+            await self._add_workspace_change(create_data.workspace_id, new_version, changes)
+
+        return created
+
+    async def create_deferred(
+        self,
+        create_data: ShoppingListCreateDTO,
+        current_user: UUID,
+    ) -> None:
+        await self._create_core(create_data, current_user, deferred=True)
+
+    async def patch(
+        self,
+        patch_data: ShoppingListPatchDTO,
+        current_user: UUID,
+        *,
+        expected_workspace_version: int | None = None,
+        record_change: bool = False,
+    ) -> ShoppingListDTO:
         workspace_id = await self._get_workspace_id_for_list(patch_data.id)
         await self._ensure_editor_access(current_user, workspace_id)
-        update_data = patch_data.model_dump(exclude_unset=True)
-        update_data.pop('id', None)
-        update_data.pop('workspace_id', None)
-        update_data.pop('created_by', None)
+
+        patch_fields = patch_data.model_dump(exclude_unset=True)
+        patch_fields.pop('id', None)
+        patch_fields.pop('workspace_id', None)
+        patch_fields.pop('created_by', None)
+
+        current_list = await self.uow.shopping_lists.get(patch_data.id)
+        if current_list is None:
+            self._log_warning("Shopping list not found", extra={'list_id': patch_data.id})
+            raise EntityNotFound(ShoppingListDTO)
+
+        if not patch_fields:
+            return current_list
+
+        new_version: int | None = None
+        if expected_workspace_version is not None:
+            new_version = await self._bump_workspace_version_or_raise(
+                workspace_id,
+                expected_workspace_version,
+            )
+
         updated: ShoppingListDTO | None = await self.uow.shopping_lists.update(
-            patch_data.id, **update_data
+            patch_data.id,
+            **patch_fields,
         )
         if not updated:
             self._log_warning("Shopping list not found", extra={'list_id': patch_data.id})
             raise EntityNotFound(ShoppingListDTO)
+
+        if record_change and new_version is not None:
+            await self._add_workspace_change(
+                workspace_id,
+                new_version,
+                [
+                    UnionOperation(
+                        root=ShoppingListPatchOperation(
+                            data=ShoppingListPatchDTO(id=patch_data.id, **patch_fields),
+                        )
+                    )
+                ],
+            )
+
         self._log_info("Shopping list was updated", extra={'list_id': updated.id})
         return updated
 
-    async def delete(self, list_id: UUID, current_user: UUID) -> None:
+    async def delete(
+        self,
+        list_id: UUID,
+        current_user: UUID,
+        *,
+        expected_workspace_version: int | None = None,
+        record_change: bool = False,
+    ) -> None:
         workspace_id = await self._get_workspace_id_for_list(list_id)
         await self._ensure_editor_access(current_user, workspace_id)
+
+        new_version: int | None = None
+        if expected_workspace_version is not None:
+            new_version = await self._bump_workspace_version_or_raise(
+                workspace_id,
+                expected_workspace_version,
+            )
+
         deleted = await self.uow.shopping_lists.delete(list_id)
         if not deleted:
             self._log_warning("Shopping list not found", extra={'list_id': list_id})
             raise EntityNotFound(ShoppingListDTO)
+
+        if record_change and new_version is not None:
+            await self._add_workspace_change(
+                workspace_id,
+                new_version,
+                [
+                    UnionOperation(
+                        root=ShoppingListDeleteOperation(id=list_id)
+                    )
+                ],
+            )
+
         self._log_info("Shopping list was deleted", extra={'list_id': list_id})
 
 

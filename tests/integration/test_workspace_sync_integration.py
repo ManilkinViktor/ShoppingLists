@@ -13,6 +13,7 @@ if str(SRC_PATH) not in sys.path:
 
 from database.uow import UnitOfWork
 from core.enums import Role
+from services.workspaces import WorkspacesService
 from services.workspace_sync import WorkspaceSyncService
 from schemas.users import UserCreateAuthDTO
 from schemas.workspaces import WorkspaceCreateDTO, WorkspacePatchDTO
@@ -21,6 +22,7 @@ from schemas.workspace_changes import (
     WorkspaceChangeCreateDTO,
     WorkspaceVersionDTO,
     UnionOperation,
+    WorkspaceDeleteOperation,
     WorkspacePatchOperation,
 )
 from conftest import session_factory
@@ -64,7 +66,6 @@ async def test_workspace_sync_push_editor() -> None:
             uow = UnitOfWork(session)
             sync_service = WorkspaceSyncService(uow)
             patch_op = WorkspacePatchOperation(
-                op="workspace.patch",
                 data=WorkspacePatchDTO(id=workspace_id, name="sync-updated"),
             )
             change = WorkspaceChangeCreateDTO(
@@ -130,7 +131,6 @@ async def test_workspace_sync_push_viewer_rejected() -> None:
             uow = UnitOfWork(session)
             sync_service = WorkspaceSyncService(uow)
             patch_op = WorkspacePatchOperation(
-                op="workspace.patch",
                 data=WorkspacePatchDTO(id=workspace_id, name="viewer-updated"),
             )
             change = WorkspaceChangeCreateDTO(
@@ -197,7 +197,6 @@ async def test_workspace_sync_pull_returns_missing_versions() -> None:
                         changes=[
                             UnionOperation(
                                 root=WorkspacePatchOperation(
-                                    op="workspace.patch",
                                     data=WorkspacePatchDTO(id=workspace_id, name="pull-updated"),
                                 )
                             )
@@ -221,5 +220,69 @@ async def test_workspace_sync_pull_returns_missing_versions() -> None:
         async with session_factory() as session:
             uow = UnitOfWork(session)
             await uow.workspaces.delete(workspace_id)
+            await uow.users.delete(user_id)
+            await uow.commit()
+
+
+@pytest.mark.asyncio
+async def test_workspace_sync_pull_returns_workspace_delete_change() -> None:
+    user_id = uuid.UUID(str(uuid7()))
+    workspace_id = uuid.UUID(str(uuid7()))
+    email = f"sync-delete-{workspace_id}@example.com"
+
+    try:
+        async with session_factory() as session:
+            uow = UnitOfWork(session)
+            await uow.users.add(
+                UserCreateAuthDTO(
+                    id=user_id,
+                    name="sync-delete",
+                    email=email,
+                    hashed_password="hashed",
+                )
+            )
+            await uow.workspaces.add(
+                WorkspaceCreateDTO(
+                    id=workspace_id,
+                    name="delete-workspace",
+                    description=None,
+                    owner_id=user_id,
+                )
+            )
+            await uow.workspace_members.add(
+                WorkspaceMemberCreateDTO(
+                    workspace_id=workspace_id,
+                    user_id=user_id,
+                    role=Role.editor,
+                )
+            )
+            await uow.commit()
+
+        async with session_factory() as session:
+            uow = UnitOfWork(session)
+            workspaces_service = WorkspacesService(uow)
+            await workspaces_service.delete(
+                workspace_id,
+                user_id,
+                expected_workspace_version=1,
+                record_change=True,
+            )
+            await uow.commit()
+
+        async with session_factory() as session:
+            uow = UnitOfWork(session)
+            sync_service = WorkspaceSyncService(uow)
+            versions = [WorkspaceVersionDTO(workspace_id=workspace_id, workspace_version=0)]
+            changes = await sync_service.pull_changes(user_id, versions)
+
+            assert len(changes) == 1
+            assert changes[0].workspace_id == workspace_id
+            assert changes[0].workspace_version == 2
+            assert len(changes[0].changes) == 1
+            assert isinstance(changes[0].changes[0].root, WorkspaceDeleteOperation)
+            assert changes[0].changes[0].root.id == workspace_id
+    finally:
+        async with session_factory() as session:
+            uow = UnitOfWork(session)
             await uow.users.delete(user_id)
             await uow.commit()

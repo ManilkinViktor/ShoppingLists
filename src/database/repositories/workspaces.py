@@ -2,9 +2,9 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, tuple_, update
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, with_loader_criteria
 
-from database.models import WorkspacesOrm, ShoppingListsOrm, WorkspaceMembersOrm
+from database.models import WorkspacesOrm, ShoppingListsOrm, WorkspaceMembersOrm, ListItemsOrm
 from core.enums import Role
 from schemas.workspaces import WorkspaceDTO, WorkspaceCreateDTO, WorkspaceRelListDTO
 from database.repositories.base import BaseRepository
@@ -28,9 +28,19 @@ class WorkspacesRepository(
         query = (
             select(WorkspacesOrm)
             .where(WorkspacesOrm.id == workspace_id)
+            .where(WorkspacesOrm.deleted_at.is_(None))
             .options(
-                selectinload(WorkspacesOrm.shopping_lists)
-                .selectinload(ShoppingListsOrm.items)
+                selectinload(WorkspacesOrm.shopping_lists).selectinload(ShoppingListsOrm.items),
+                with_loader_criteria(
+                    ShoppingListsOrm,
+                    ShoppingListsOrm.deleted_at.is_(None),
+                    include_aliases=True,
+                ),
+                with_loader_criteria(
+                    ListItemsOrm,
+                    ListItemsOrm.deleted_at.is_(None),
+                    include_aliases=True,
+                ),
             )
         )
         result = await self._session.execute(query)
@@ -65,9 +75,19 @@ class WorkspacesRepository(
             select(WorkspacesOrm, WorkspaceMembersOrm.role.label('role'))
             .join(WorkspaceMembersOrm, WorkspacesOrm.id == WorkspaceMembersOrm.workspace_id)
             .where(WorkspaceMembersOrm.user_id == user_id)
+            .where(WorkspacesOrm.deleted_at.is_(None))
             .options(
-                selectinload(WorkspacesOrm.shopping_lists)
-                .selectinload(ShoppingListsOrm.items)
+                selectinload(WorkspacesOrm.shopping_lists).selectinload(ShoppingListsOrm.items),
+                with_loader_criteria(
+                    ShoppingListsOrm,
+                    ShoppingListsOrm.deleted_at.is_(None),
+                    include_aliases=True,
+                ),
+                with_loader_criteria(
+                    ListItemsOrm,
+                    ListItemsOrm.deleted_at.is_(None),
+                    include_aliases=True,
+                ),
             )
 
         )
@@ -91,6 +111,7 @@ class WorkspacesRepository(
         stmt = (
             update(WorkspacesOrm)
             .where(WorkspacesOrm.id == workspace_id, WorkspacesOrm.version == expected_version)
+            .where(WorkspacesOrm.deleted_at.is_(None))
             .values(version=WorkspacesOrm.version + 1)
             .returning(WorkspacesOrm.version)
         )
@@ -107,6 +128,7 @@ class WorkspacesRepository(
         stmt = (
             update(WorkspacesOrm)
             .where(tuple_(WorkspacesOrm.id, WorkspacesOrm.version).in_(expected_versions.items()))
+            .where(WorkspacesOrm.deleted_at.is_(None))
             .values(version=WorkspacesOrm.version + 1)
             .returning(WorkspacesOrm.id, WorkspacesOrm.version)
         )

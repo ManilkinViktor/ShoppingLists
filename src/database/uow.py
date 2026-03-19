@@ -42,6 +42,11 @@ class UnitOfWork:
             raise
         await self._flush_logs()
 
+    def set_defer_flush(self, enabled: bool) -> None:
+        if enabled:
+            self._session.info['defer_flush'] = True
+        else:
+            self._session.info.pop('defer_flush', None)
 
     def log(self, logger_obj: Logger, level: int, msg: str, *args, **kwargs) -> None:
         self._aggregator_logs.append((logger_obj, {

@@ -28,4 +28,3 @@ class ShoppingListRelItemDTO(ShoppingListDTO):
 
 class ShoppingListRelWorkspaceDTO(ShoppingListDTO):
     workspace: 'WorkspaceRelUserDTO | None'
-

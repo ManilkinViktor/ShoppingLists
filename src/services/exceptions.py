@@ -16,6 +16,10 @@ class ConflictUUID(DomainException):
     error_code: str = 'CONFLICT_UUID'
     public_message: str = 'UUID already exists'
 
+class WorkspaceVersionMismatch(DomainException):
+    error_code: str = 'WORKSPACE_VERSION_MISMATCH'
+    public_message: str = 'Workspace version mismatch'
+
 class EntityNotFound(DomainException):
     error_code: str = 'ENTITY_NOT_FOUND'
 

@@ -11,6 +11,13 @@ class WorkspaceChangesRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    def _is_flush_deferred(self) -> bool:
+        return bool(self._session.info.get('defer_flush'))
+
+    async def _flush_if_needed(self) -> None:
+        if not self._is_flush_deferred():
+            await self._session.flush()
+
     async def add_all(self, changes: list[WorkspaceChangeCreateDTO]) -> None:
         for workspace_change in changes:
             payload = [change.model_dump(mode='json') for change in workspace_change.changes]
@@ -21,7 +28,7 @@ class WorkspaceChangesRepository:
                     change={'changes': payload},
                 )
             )
-        await self._session.flush()
+        await self._flush_if_needed()
 
     async def get_since_versions(
         self,

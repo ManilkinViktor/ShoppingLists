@@ -3,46 +3,50 @@ from typing import Literal,  Union
 
 from pydantic import BaseModel, Field, RootModel
 
-from schemas.list_items import ListItemCreateDTO, ListItemPatchDTO
+from schemas.list_items import (
+    ListItemsCreateDTO,
+    ListItemsDeleteDTO,
+    ListItemsPatchDTO,
+)
 from schemas.shopping_lists import ShoppingListCreateDTO, ShoppingListPatchDTO
-from schemas.types import CreateOperation, DeleteOperation, OperationBase, PatchOperation
+from schemas.types import CreateOperation, DeleteOperation, PatchOperation
 from schemas.workspaces import WorkspaceCreateDTO, WorkspacePatchDTO
 
 
 class WorkspaceCreateOperation(CreateOperation[WorkspaceCreateDTO]):
-    op: Literal['workspace.create']
+    op: Literal['workspace.create'] = 'workspace.create'
 
 
 class WorkspacePatchOperation(PatchOperation[WorkspacePatchDTO]):
-    op: Literal['workspace.patch']
+    op: Literal['workspace.patch'] = 'workspace.patch'
 
 
-class WorkspaceDeleteOperation(DeleteOperation):
-    op: Literal['workspace.delete']
+class WorkspaceDeleteOperation(DeleteOperation[uuid.UUID]):
+    op: Literal['workspace.delete'] = 'workspace.delete'
 
 
 class ShoppingListCreateOperation(CreateOperation[ShoppingListCreateDTO]):
-    op: Literal['shopping_list.create']
+    op: Literal['shopping_list.create'] = 'shopping_list.create'
 
 
 class ShoppingListPatchOperation(PatchOperation[ShoppingListPatchDTO]):
-    op: Literal['shopping_list.patch']
+    op: Literal['shopping_list.patch'] = 'shopping_list.patch'
 
 
-class ShoppingListDeleteOperation(DeleteOperation):
-    op: Literal['shopping_list.delete']
+class ShoppingListDeleteOperation(DeleteOperation[uuid.UUID]):
+    op: Literal['shopping_list.delete'] = 'shopping_list.delete'
 
 
-class ListItemCreateOperation(CreateOperation[ListItemCreateDTO]):
-    op: Literal['list_item.create']
+class ListItemsCreateOperation(CreateOperation[ListItemsCreateDTO]):
+    op: Literal['list_items.create'] = 'list_items.create'
 
 
-class ListItemPatchOperation(PatchOperation[ListItemPatchDTO]):
-    op: Literal['list_item.patch']
+class ListItemsPatchOperation(PatchOperation[ListItemsPatchDTO]):
+    op: Literal['list_items.patch'] = 'list_items.patch'
 
 
-class ListItemDeleteOperation(DeleteOperation):
-    op: Literal['list_item.delete']
+class ListItemsDeleteOperation(DeleteOperation[ListItemsDeleteDTO]):
+    op: Literal['list_items.delete'] = 'list_items.delete'
 
 
 class UnionOperation(RootModel):
@@ -53,9 +57,9 @@ class UnionOperation(RootModel):
         ShoppingListCreateOperation,
         ShoppingListPatchOperation,
         ShoppingListDeleteOperation,
-        ListItemCreateOperation,
-        ListItemPatchOperation,
-        ListItemDeleteOperation,
+        ListItemsCreateOperation,
+        ListItemsPatchOperation,
+        ListItemsDeleteOperation,
     ] = Field(discriminator='op')
 
 

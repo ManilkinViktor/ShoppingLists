@@ -1,6 +1,7 @@
 from uuid import UUID
-from typing import Protocol, TypeVar
+from typing import Protocol
 
+from schemas.types import CreateDTO, DeleteArg, PatchDTO
 from schemas.workspaces import WorkspaceDTO
 from schemas.workspace_changes import (
     UnionOperation,
@@ -17,14 +18,10 @@ from services.shopping_lists import ShoppingListsService
 from services.list_items import ListItemsService
 
 
-CreateDTO = TypeVar('CreateDTO')
-PatchDTO = TypeVar('PatchDTO')
-
-
-class CrudService(Protocol[CreateDTO, PatchDTO]):
-    async def create(self, data: CreateDTO, current_user: UUID) -> object: ...
+class CrudService(Protocol[CreateDTO, PatchDTO, DeleteArg]):
+    async def create_deferred(self, data: CreateDTO, current_user: UUID) -> None: ...
     async def patch(self, data: PatchDTO, current_user: UUID) -> object: ...
-    async def delete(self, entity_id: UUID, current_user: UUID) -> None: ...
+    async def delete(self, data: DeleteArg, current_user: UUID) -> None: ...
 
 
 class WorkspaceSyncService(BaseService):
@@ -36,7 +33,7 @@ class WorkspaceSyncService(BaseService):
         self._service_map: dict[str, CrudService] = {
             'workspace': self._workspaces_service,
             'shopping_list': self._shopping_lists_service,
-            'list_item': self._list_items_service,
+            'list_items': self._list_items_service,
         }
 
     def _get_requested_workspace_ids(
@@ -144,7 +141,7 @@ class WorkspaceSyncService(BaseService):
             if service is None:
                 raise ValueError(f'Unknown operation prefix: {prefix}')
             if action == 'create':
-                await service.create(op_data.data, current_user)
+                await service.create_deferred(op_data.data, current_user)
             elif action == 'patch':
                 await service.patch(op_data.data, current_user)
             elif action == 'delete':
@@ -279,9 +276,13 @@ class WorkspaceSyncService(BaseService):
         eligible_workspace_ids: set[UUID] = (
             requested_workspace_ids - outdated_workspace_ids - non_editable_requested_ids
         )
-        _new_changes, expected_bump_versions, bumped_workspace_versions = await self._apply_changes(
-            current_user, workspace_changes, eligible_workspace_ids
-        )
+        self.uow.set_defer_flush(True)
+        try:
+            _new_changes, expected_bump_versions, bumped_workspace_versions = await self._apply_changes(
+                current_user, workspace_changes, eligible_workspace_ids
+            )
+        finally:
+            self.uow.set_defer_flush(False)
         outdated_workspace_ids = self._finalize_bump_versions(
             outdated_workspace_ids,
             expected_bump_versions,

@@ -29,3 +29,6 @@ def rebuild_models() -> None:
 
     for model in models:
         model.model_rebuild(_types_namespace=types_namespace)
+
+
+rebuild_models()

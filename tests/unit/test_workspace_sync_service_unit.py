@@ -17,11 +17,13 @@ from core.enums import Role
 from services.workspace_sync import WorkspaceSyncService
 from services.exceptions import DuplicateWorkspaceSyncPayload
 from schemas.workspace_changes import (
+    ListItemsCreateOperation,
     WorkspaceChangeCreateDTO,
     WorkspaceVersionDTO,
     UnionOperation,
     WorkspacePatchOperation,
 )
+from schemas.list_items import ListItemCreateDTO, ListItemsCreateDTO
 from schemas.workspaces import WorkspacePatchDTO
 
 
@@ -73,7 +75,7 @@ def _wire_dummy_services(sync_service: WorkspaceSyncService) -> DummyCrudService
     sync_service._service_map = {
         "workspace": workspace_service,
         "shopping_list": shopping_list_service,
-        "list_item": list_item_service,
+        "list_items": list_item_service,
     }
     return workspace_service
 
@@ -113,7 +115,6 @@ async def test_workspace_sync_push_viewer_rejected() -> None:
     workspace_service = _wire_dummy_services(sync_service)
 
     patch_op = WorkspacePatchOperation(
-        op="workspace.patch",
         data=WorkspacePatchDTO(id=workspace_id, name="viewer-updated"),
     )
     change = WorkspaceChangeCreateDTO(
@@ -146,7 +147,7 @@ async def test_workspace_sync_push_editor_applies_and_bumps() -> None:
     workspace_service = _wire_dummy_services(sync_service)
 
     patch_data = WorkspacePatchDTO(id=workspace_id, name="sync-updated")
-    patch_op = WorkspacePatchOperation(op="workspace.patch", data=patch_data)
+    patch_op = WorkspacePatchOperation(data=patch_data)
     change = WorkspaceChangeCreateDTO(
         workspace_id=workspace_id,
         workspace_version=1,
@@ -162,6 +163,57 @@ async def test_workspace_sync_push_editor_applies_and_bumps() -> None:
     added_changes = uow.workspace_changes.add_all.call_args[0][0]
     assert len(added_changes) == 1
     assert added_changes[0].workspace_version == 2
+
+
+@pytest.mark.asyncio
+async def test_workspace_sync_push_grouped_item_create_uses_batch_method() -> None:
+    user_id = _uuid7()
+    workspace_id = _uuid7()
+    list_id = _uuid7()
+    item_id = _uuid7()
+    members = [SimpleNamespace(workspace_id=workspace_id, role=Role.editor)]
+    workspaces = [SimpleNamespace(id=workspace_id, version=1)]
+    bumped_versions = {workspace_id: 2}
+    uow = _build_uow(
+        members=members,
+        workspaces=workspaces,
+        compare_versions_result=bumped_versions,
+    )
+    sync_service = WorkspaceSyncService(uow)
+    _wire_dummy_services(sync_service)
+    list_item_service = sync_service._list_items_service
+
+    item_data = ListItemCreateDTO(
+        id=item_id,
+        list_id=list_id,
+        name="milk",
+        quantity=1,
+        unit="pcs",
+        category="dairy",
+        is_purchased=False,
+    )
+    create_op = ListItemsCreateOperation(
+        data=ListItemsCreateDTO(
+            list_id=list_id,
+            items=[item_data],
+        ),
+    )
+    change = WorkspaceChangeCreateDTO(
+        workspace_id=workspace_id,
+        workspace_version=1,
+        changes=[UnionOperation(root=create_op)],
+    )
+
+    result = await sync_service.push_changes(user_id, [change])
+
+    assert result[0].accepted is True
+    list_item_service.create.assert_awaited_once_with(
+        ListItemsCreateDTO(
+            list_id=list_id,
+            items=[item_data],
+        ),
+        user_id,
+    )
 
 
 

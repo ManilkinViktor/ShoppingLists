@@ -5,6 +5,11 @@ from sqlalchemy.exc import IntegrityError
 
 from api.dependencies import CurrentUser, UoWDep
 from api.http_exceptions import domain_to_http_exception, integrity_error_to_http_exception
+from api.schemas.workspaces import (
+    WorkspaceCreateRequestDTO,
+    WorkspaceDeleteRequestDTO,
+    WorkspacePatchRequestDTO,
+)
 from schemas.workspace_changes import (
     WorkspaceChangeCreateDTO,
     WorkspaceVersionDTO,
@@ -64,13 +69,22 @@ async def get_workspace(
 
 @router.post('', response_model=WorkspaceDTO, status_code=status.HTTP_201_CREATED)
 async def create_workspace(
-    payload: WorkspaceCreateDTO,
+    payload: WorkspaceCreateRequestDTO,
     current_user: CurrentUser,
     uow: UoWDep,
 ) -> WorkspaceDTO:
     workspaces_service = WorkspacesService(uow)
+    workspace_data = WorkspaceCreateDTO(
+        id=payload.id,
+        name=payload.name,
+        description=payload.description,
+    )
     try:
-        workspace = await workspaces_service.create(payload, current_user.id)
+        workspace = await workspaces_service.create(
+            workspace_data,
+            current_user.id,
+            record_change=True,
+        )
         await uow.commit()
     except DomainException as error:
         raise domain_to_http_exception(error) from None
@@ -82,14 +96,20 @@ async def create_workspace(
 @router.patch('/{workspace_id}', response_model=WorkspaceDTO)
 async def patch_workspace(
     workspace_id: uuid.UUID,
-    payload: WorkspacePatchDTO,
+    payload: WorkspacePatchRequestDTO,
     current_user: CurrentUser,
     uow: UoWDep,
 ) -> WorkspaceDTO:
     workspaces_service = WorkspacesService(uow)
     try:
-        patch_data = WorkspacePatchDTO(id=workspace_id, **payload.model_dump(exclude_unset=True))
-        workspace = await workspaces_service.patch(patch_data, current_user.id)
+        patch_fields = payload.model_dump(exclude={'workspace_version'}, exclude_unset=True)
+        patch_data = WorkspacePatchDTO(id=workspace_id, **patch_fields)
+        workspace = await workspaces_service.patch(
+            patch_data,
+            current_user.id,
+            expected_workspace_version=payload.workspace_version,
+            record_change=True,
+        )
         await uow.commit()
     except DomainException as error:
         raise domain_to_http_exception(error) from None
@@ -101,12 +121,18 @@ async def patch_workspace(
 @router.delete('/{workspace_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_workspace(
     workspace_id: uuid.UUID,
+    payload: WorkspaceDeleteRequestDTO,
     current_user: CurrentUser,
     uow: UoWDep,
 ) -> None:
     workspaces_service = WorkspacesService(uow)
     try:
-        await workspaces_service.delete(workspace_id, current_user.id)
+        await workspaces_service.delete(
+            workspace_id,
+            current_user.id,
+            expected_workspace_version=payload.workspace_version,
+            record_change=True,
+        )
         await uow.commit()
     except DomainException as error:
         raise domain_to_http_exception(error) from None

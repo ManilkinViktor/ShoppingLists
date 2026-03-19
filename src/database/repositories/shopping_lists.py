@@ -2,10 +2,10 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, with_loader_criteria
 
 from database.repositories.base import BaseRepository
-from database.models import ShoppingListsOrm
+from database.models import ShoppingListsOrm, ListItemsOrm
 from schemas.shopping_lists import ShoppingListDTO, ShoppingListCreateDTO, ShoppingListRelItemDTO
 
 class ShoppingListsRepository(
@@ -22,9 +22,19 @@ class ShoppingListsRepository(
         )
 
     async def get_list_with_items(self, list_id: uuid.UUID) -> ShoppingListRelItemDTO | None:
-        query = (select(ShoppingListsOrm)
-                 .where(ShoppingListsOrm.id == list_id)
-                 .options(selectinload(ShoppingListsOrm.items)))
+        query = (
+            select(ShoppingListsOrm)
+            .where(ShoppingListsOrm.id == list_id)
+            .where(ShoppingListsOrm.deleted_at.is_(None))
+            .options(
+                selectinload(ShoppingListsOrm.items),
+                with_loader_criteria(
+                    ListItemsOrm,
+                    ListItemsOrm.deleted_at.is_(None),
+                    include_aliases=True,
+                ),
+            )
+        )
         result = await self._session.execute(query)
         list_orm: ShoppingListsOrm | None = result.scalar_one_or_none()
         return ShoppingListRelItemDTO.model_validate(list_orm, from_attributes=True) if list_orm else None
