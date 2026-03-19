@@ -29,6 +29,7 @@ from schemas.workspaces import WorkspacePatchDTO
 class DummyCrudService:
     def __init__(self) -> None:
         self.create = AsyncMock()
+        self.create_deferred = AsyncMock()
         self.patch = AsyncMock()
         self.delete = AsyncMock()
         self.editable_workspace_ids: set[uuid.UUID] | None = None
@@ -50,6 +51,7 @@ def _build_uow(
 ) -> SimpleNamespace:
     uow = SimpleNamespace()
     uow.log = MagicMock()
+    uow.set_defer_flush = MagicMock()
     uow.workspace_members = SimpleNamespace(
         get_all=AsyncMock(return_value=members),
     )
@@ -207,7 +209,7 @@ async def test_workspace_sync_push_grouped_item_create_uses_batch_method() -> No
     result = await sync_service.push_changes(user_id, [change])
 
     assert result[0].accepted is True
-    list_item_service.create.assert_awaited_once_with(
+    list_item_service.create_deferred.assert_awaited_once_with(
         ListItemsCreateDTO(
             list_id=list_id,
             items=[item_data],
