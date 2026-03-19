@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from api.dependencies import CurrentUser, UoWDep
 from api.http_exceptions import domain_to_http_exception, integrity_error_to_http_exception
 from api.schemas.workspace_invites import CreateInviteRequestDTO, JoinByInviteRequestDTO
+from api.schemas.workspace_members import UpdateMemberRoleRequestDTO
 from api.schemas.workspaces import (
     WorkspaceCreateRequestDTO,
     WorkspaceDeleteRequestDTO,
@@ -17,9 +18,11 @@ from schemas.workspace_changes import (
     WorkspacePushResultDTO,
 )
 from schemas.workspace_invites import InviteCodeResponseDTO
+from schemas.workspace_members import WorkspaceMemberDTO
 from schemas.workspaces import WorkspaceCreateDTO, WorkspacePatchDTO, WorkspaceDTO, WorkspaceRelListDTO
 from services.exceptions import DomainException
 from services.workspace_invites import WorkspaceInviteService
+from services.workspace_members import WorkspaceMembersService
 from services.workspace_sync import WorkspaceSyncService
 from services.workspaces import WorkspacesService
 
@@ -206,6 +209,59 @@ async def join_workspace_by_invite(
     invite_service = WorkspaceInviteService(uow)
     try:
         return await invite_service.join_workspace(payload.code, current_user.id)
+    except DomainException as error:
+        raise domain_to_http_exception(error) from None
+    except IntegrityError as error:
+        raise integrity_error_to_http_exception(error) from None
+
+
+@router.get('/{workspace_id}/members', response_model=list[WorkspaceMemberDTO])
+async def list_workspace_members(
+        workspace_id: uuid.UUID,
+        current_user: CurrentUser,
+        uow: UoWDep,
+) -> list[WorkspaceMemberDTO]:
+    members_service = WorkspaceMembersService(uow)
+    try:
+        return await members_service.get_members(workspace_id, current_user.id)
+    except DomainException as error:
+        raise domain_to_http_exception(error) from None
+    except IntegrityError as error:
+        raise integrity_error_to_http_exception(error) from None
+
+
+@router.patch('/{workspace_id}/members/{user_id}', response_model=WorkspaceMemberDTO)
+async def update_member_role(
+        workspace_id: uuid.UUID,
+        user_id: uuid.UUID,
+        payload: UpdateMemberRoleRequestDTO,
+        current_user: CurrentUser,
+        uow: UoWDep,
+) -> WorkspaceMemberDTO:
+    members_service = WorkspaceMembersService(uow)
+    try:
+        return await members_service.update_member_role(
+            workspace_id,
+            user_id,
+            current_user.id,
+            payload.role,
+        )
+    except DomainException as error:
+        raise domain_to_http_exception(error) from None
+    except IntegrityError as error:
+        raise integrity_error_to_http_exception(error) from None
+
+
+@router.delete('/{workspace_id}/members/{user_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def remove_member(
+        workspace_id: uuid.UUID,
+        user_id: uuid.UUID,
+        current_user: CurrentUser,
+        uow: UoWDep,
+) -> None:
+    members_service = WorkspaceMembersService(uow)
+    try:
+        await members_service.remove_member(workspace_id, user_id, current_user.id)
     except DomainException as error:
         raise domain_to_http_exception(error) from None
     except IntegrityError as error:

@@ -18,6 +18,12 @@ class WorkspaceMemberCreateDTO(BaseModel):
     role: Role
 
 
+class WorkspaceMemberPatchDTO(BaseModel):
+    workspace_id: uuid.UUID
+    user_id: uuid.UUID
+    role: Role
+
+
 class WorkspaceMemberDTO(WorkspaceMemberCreateDTO):
     joined_at: datetime.datetime
 
