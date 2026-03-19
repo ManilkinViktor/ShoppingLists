@@ -10,7 +10,7 @@ from database.mixins import TimestampMixin, UUIDMixin
 
 if TYPE_CHECKING:
     from database.models import ShoppingListsOrm, WorkspaceMembersOrm, \
-        WorkspaceChangesOrm
+        WorkspaceChangesOrm, WorkspaceInvitesOrm
 
 
 class WorkspacesOrm(UUIDMixin, TimestampMixin, Base):
@@ -31,4 +31,9 @@ class WorkspacesOrm(UUIDMixin, TimestampMixin, Base):
 
     changes: Mapped['WorkspaceChangesOrm'] = relationship(
         back_populates='workspace'
+    )
+
+    invites: Mapped[list['WorkspaceInvitesOrm']] = relationship(
+        back_populates='workspace',
+        cascade='all, delete-orphan',
     )

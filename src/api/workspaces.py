@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 
 from api.dependencies import CurrentUser, UoWDep
 from api.http_exceptions import domain_to_http_exception, integrity_error_to_http_exception
+from api.schemas.workspace_invites import CreateInviteRequestDTO, JoinByInviteRequestDTO
 from api.schemas.workspaces import (
     WorkspaceCreateRequestDTO,
     WorkspaceDeleteRequestDTO,
@@ -15,8 +16,10 @@ from schemas.workspace_changes import (
     WorkspaceVersionDTO,
     WorkspacePushResultDTO,
 )
+from schemas.workspace_invites import InviteCodeResponseDTO
 from schemas.workspaces import WorkspaceCreateDTO, WorkspacePatchDTO, WorkspaceDTO, WorkspaceRelListDTO
 from services.exceptions import DomainException
+from services.workspace_invites import WorkspaceInviteService
 from services.workspace_sync import WorkspaceSyncService
 from services.workspaces import WorkspacesService
 
@@ -170,3 +173,40 @@ async def push_workspace_changes(
     except IntegrityError as error:
         raise integrity_error_to_http_exception(error) from None
     return result
+
+
+@router.post('/{workspace_id}/invites', response_model=InviteCodeResponseDTO, status_code=status.HTTP_201_CREATED)
+async def create_workspace_invite(
+        workspace_id: uuid.UUID,
+        payload: CreateInviteRequestDTO,
+        current_user: CurrentUser,
+        uow: UoWDep,
+) -> InviteCodeResponseDTO:
+    invite_service = WorkspaceInviteService(uow)
+    try:
+        return await invite_service.create_invite(
+            workspace_id,
+            current_user.id,
+            payload.role,
+            payload.max_uses,
+            payload.expires_in_hours,
+        )
+    except DomainException as error:
+        raise domain_to_http_exception(error) from None
+    except IntegrityError as error:
+        raise integrity_error_to_http_exception(error) from None
+
+
+@router.post('/join-by-invite', response_model=WorkspaceDTO, status_code=status.HTTP_200_OK)
+async def join_workspace_by_invite(
+        payload: JoinByInviteRequestDTO,
+        current_user: CurrentUser,
+        uow: UoWDep,
+) -> WorkspaceDTO:
+    invite_service = WorkspaceInviteService(uow)
+    try:
+        return await invite_service.join_workspace(payload.code, current_user.id)
+    except DomainException as error:
+        raise domain_to_http_exception(error) from None
+    except IntegrityError as error:
+        raise integrity_error_to_http_exception(error) from None

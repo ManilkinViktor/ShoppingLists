@@ -10,6 +10,7 @@ from database.repositories.shopping_lists import ShoppingListsRepository
 from database.repositories.users import UsersRepository
 from database.repositories.workspace_changes import WorkspaceChangesRepository
 from database.repositories.workspace_members import WorkspaceMembersRepository
+from database.repositories.workspace_invites import WorkspaceInvitesRepository
 from database.repositories.workspaces import WorkspacesRepository
 from database.session import session_factory
 
@@ -20,6 +21,7 @@ class UnitOfWork:
         self._users: UsersRepository | None = None
         self._workspaces: WorkspacesRepository | None = None
         self._workspace_members: WorkspaceMembersRepository | None = None
+        self._workspace_invites: WorkspaceInvitesRepository | None = None
         self._shopping_lists: ShoppingListsRepository | None = None
         self._list_items: ListItemsRepository | None = None
         self._workspace_changes: WorkspaceChangesRepository | None = None
@@ -82,6 +84,12 @@ class UnitOfWork:
         if self._workspace_members is None:
             self._workspace_members = WorkspaceMembersRepository(self._session)
         return self._workspace_members
+
+    @property
+    def workspace_invites(self) -> WorkspaceInvitesRepository:
+        if self._workspace_invites is None:
+            self._workspace_invites = WorkspaceInvitesRepository(self._session)
+        return self._workspace_invites
 
     @property
     def shopping_lists(self) -> ShoppingListsRepository:
