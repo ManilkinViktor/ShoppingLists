@@ -2,14 +2,6 @@
 
 from core.enums import Role
 from database.uow import UnitOfWork
-from schemas.workspace_changes import (
-    ListItemsCreateOperation,
-    ListItemsDeleteOperation,
-    ListItemsPatchOperation,
-    UnionOperation,
-)
-from services.base import BaseService
-from services.exceptions import ConflictUUID, EntityNotFound
 from schemas.list_items import (
     ListItemCreateDTO,
     ListItemDTO,
@@ -19,6 +11,14 @@ from schemas.list_items import (
     ListItemsPatchDTO,
 )
 from schemas.shopping_lists import ShoppingListDTO
+from schemas.workspace_changes import (
+    ListItemsCreateOperation,
+    ListItemsDeleteOperation,
+    ListItemsPatchOperation,
+    UnionOperation,
+)
+from services.base import BaseService
+from services.exceptions import ConflictUUID, EntityNotFound
 
 
 class ListItemsService(BaseService):
@@ -31,10 +31,10 @@ class ListItemsService(BaseService):
         self._editable_workspace_ids = editable_workspace_ids
 
     async def _ensure_member_access(
-        self,
-        current_user: UUID,
-        workspace_id: UUID,
-        entity_type: type,
+            self,
+            current_user: UUID,
+            workspace_id: UUID,
+            entity_type: type,
     ) -> None:
         member = await self.uow.workspace_members.get_by(
             user_id=current_user,
@@ -93,9 +93,9 @@ class ListItemsService(BaseService):
         return {item.id: item for item in items}
 
     async def _prepare_create(
-        self,
-        create_data: ListItemsCreateDTO,
-        current_user: UUID,
+            self,
+            create_data: ListItemsCreateDTO,
+            current_user: UUID,
     ) -> tuple[UUID, list[ListItemCreateDTO], dict[UUID, ListItemDTO], bool]:
         list_id = create_data.list_id
         items = create_data.items
@@ -125,11 +125,11 @@ class ListItemsService(BaseService):
         return workspace_id, prepared_items, existing_items_by_id, has_creates
 
     async def _perform_create(
-        self,
-        prepared_items: list[ListItemCreateDTO],
-        existing_items_by_id: dict[UUID, ListItemDTO],
-        *,
-        deferred: bool,
+            self,
+            prepared_items: list[ListItemCreateDTO],
+            existing_items_by_id: dict[UUID, ListItemDTO],
+            *,
+            deferred: bool,
     ) -> tuple[list[ListItemDTO], list[ListItemCreateDTO]]:
         created_items: list[ListItemDTO] = []
         created_item_payloads: list[ListItemCreateDTO] = []
@@ -155,12 +155,12 @@ class ListItemsService(BaseService):
         return created_items, created_item_payloads
 
     async def create(
-        self,
-        create_data: ListItemsCreateDTO,
-        current_user: UUID,
-        *,
-        expected_workspace_version: int | None = None,
-        record_change: bool = False,
+            self,
+            create_data: ListItemsCreateDTO,
+            current_user: UUID,
+            *,
+            expected_workspace_version: int | None = None,
+            record_change: bool = False,
     ) -> list[ListItemDTO]:
         list_id = create_data.list_id
         items = create_data.items
@@ -203,9 +203,9 @@ class ListItemsService(BaseService):
         return created_items
 
     async def create_deferred(
-        self,
-        create_data: ListItemsCreateDTO,
-        current_user: UUID,
+            self,
+            create_data: ListItemsCreateDTO,
+            current_user: UUID,
     ) -> None:
         if not create_data.items:
             return
@@ -221,12 +221,12 @@ class ListItemsService(BaseService):
         )
 
     async def patch(
-        self,
-        patch_data: ListItemsPatchDTO,
-        current_user: UUID,
-        *,
-        expected_workspace_version: int | None = None,
-        record_change: bool = False,
+            self,
+            patch_data: ListItemsPatchDTO,
+            current_user: UUID,
+            *,
+            expected_workspace_version: int | None = None,
+            record_change: bool = False,
     ) -> list[ListItemDTO]:
         list_id = patch_data.list_id
         items = patch_data.items
@@ -323,12 +323,12 @@ class ListItemsService(BaseService):
         return updated_items
 
     async def delete(
-        self,
-        delete_data: ListItemsDeleteDTO,
-        current_user: UUID,
-        *,
-        expected_workspace_version: int | None = None,
-        record_change: bool = False,
+            self,
+            delete_data: ListItemsDeleteDTO,
+            current_user: UUID,
+            *,
+            expected_workspace_version: int | None = None,
+            record_change: bool = False,
     ) -> None:
         list_id = delete_data.list_id
         ids = delete_data.ids
@@ -377,19 +377,19 @@ class ListItemsService(BaseService):
             )
 
     async def list_for_user(
-        self,
-        list_id: UUID,
-        current_user: UUID,
+            self,
+            list_id: UUID,
+            current_user: UUID,
     ) -> list[ListItemDTO]:
         workspace_id = await self._get_workspace_id_for_list(list_id)
         await self._ensure_member_access(current_user, workspace_id, ShoppingListDTO)
         return await self.uow.list_items.get_all(list_id=list_id)
 
     async def get_for_user(
-        self,
-        list_id: UUID,
-        item_id: UUID,
-        current_user: UUID,
+            self,
+            list_id: UUID,
+            item_id: UUID,
+            current_user: UUID,
     ) -> ListItemDTO:
         item = await self.uow.list_items.get(item_id)
         if not item or item.list_id != list_id:

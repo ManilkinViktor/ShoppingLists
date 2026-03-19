@@ -1,18 +1,20 @@
-import bcrypt
 import datetime
 import uuid
 from typing import Any
 
-from fastapi.concurrency import run_in_threadpool
+import bcrypt
 import jwt
+from fastapi.concurrency import run_in_threadpool
 
 from core.config import settings
 from utils.datetime_utils import utc_now
+
 
 def _hash_password_sync(password: str) -> str:
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
     return hashed.decode('utf-8')
+
 
 async def hash_password(password: str) -> str:
     return await run_in_threadpool(_hash_password_sync, password)
@@ -23,6 +25,7 @@ def _check_password_sync(password: str, hashed: str) -> bool:
         password.encode('utf-8'),
         hashed.encode('utf-8')
     )
+
 
 async def check_password(password: str, hashed: str) -> bool:
     return await run_in_threadpool(_check_password_sync, password, hashed)
@@ -45,9 +48,9 @@ def create_access_token(subject: uuid.UUID, expires_minutes: int | None = None) 
 
 
 def create_refresh_token(
-    subject: uuid.UUID,
-    expires_minutes: int | None = None,
-    token_id: uuid.UUID | None = None,
+        subject: uuid.UUID,
+        expires_minutes: int | None = None,
+        token_id: uuid.UUID | None = None,
 ) -> tuple[str, uuid.UUID, datetime.datetime]:
     lifetime = expires_minutes or settings.JWT_REFRESH_TOKEN_EXPIRE_MINUTES
     now = datetime.datetime.now(datetime.UTC)

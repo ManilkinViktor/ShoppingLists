@@ -1,12 +1,12 @@
+import asyncio
 import logging
 import sys
 from abc import ABCMeta
-from typing import Any, Callable
 from functools import wraps
-import asyncio
+from typing import Any, Callable
+
 
 class AsyncHandler(logging.Handler):
-
     COLOR_MAP = {
         logging.DEBUG: '\033[0m',
         logging.INFO: '\033[0m',
@@ -104,17 +104,16 @@ class AsyncHandler(logging.Handler):
         sys.stdout.write(msg + "\n")
 
 
-
 class LoggerMeta(ABCMeta):
     """
     A metaclass that automatically adds a `logger` field to abstract classes (child's elso have).
     The `logger` field is an instance of logging.Logger with the name of the class module.
     """
+
     def __new__(mcs, name: str, bases: tuple, namespace: dict[str, Any], **kwargs: Any) -> type:
         logger_name = f"{namespace.get('__module__')}.{name}"
         logger = logging.getLogger(logger_name)
         logger.setLevel(logging.DEBUG)
-
 
         if not any(isinstance(h, AsyncHandler) for h in logger.handlers):
             handler = AsyncHandler()
@@ -126,7 +125,7 @@ class LoggerMeta(ABCMeta):
 
 
 def logging_method_exception(
-    exception_types: type[Exception] | tuple[type[Exception]],
+        exception_types: type[Exception] | tuple[type[Exception]],
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     decorator used for methods, need attr cls.logger
@@ -146,9 +145,7 @@ def logging_method_exception(
                 if logger:
                     logger.exception(error)
                 raise
+
         return wrapper
 
     return decorator
-
-
-

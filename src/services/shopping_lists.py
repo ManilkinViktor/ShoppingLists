@@ -3,6 +3,12 @@
 from core.enums import Role
 from database.uow import UnitOfWork
 from schemas.list_items import ListItemCreateDTO, ListItemsCreateDTO
+from schemas.shopping_lists import (
+    ShoppingListCreateDTO,
+    ShoppingListPatchDTO,
+    ShoppingListDTO,
+    ShoppingListRelItemDTO,
+)
 from schemas.workspace_changes import (
     ListItemsCreateOperation,
     ShoppingListCreateOperation,
@@ -12,12 +18,6 @@ from schemas.workspace_changes import (
 )
 from services.base import BaseService
 from services.exceptions import ConflictUUID, EntityNotFound
-from schemas.shopping_lists import (
-    ShoppingListCreateDTO,
-    ShoppingListPatchDTO,
-    ShoppingListDTO,
-    ShoppingListRelItemDTO,
-)
 from services.list_items import ListItemsService
 
 
@@ -31,10 +31,10 @@ class ShoppingListsService(BaseService):
         self._editable_workspace_ids = editable_workspace_ids
 
     async def _ensure_member_access(
-        self,
-        current_user: UUID,
-        workspace_id: UUID,
-        entity_type: type,
+            self,
+            current_user: UUID,
+            workspace_id: UUID,
+            entity_type: type,
     ) -> None:
         member = await self.uow.workspace_members.get_by(
             user_id=current_user,
@@ -87,11 +87,11 @@ class ShoppingListsService(BaseService):
         )
 
     async def _create_core(
-        self,
-        create_data: ShoppingListCreateDTO,
-        current_user: UUID,
-        *,
-        deferred: bool,
+            self,
+            create_data: ShoppingListCreateDTO,
+            current_user: UUID,
+            *,
+            deferred: bool,
     ) -> ShoppingListDTO | None:
         create_data = create_data.model_copy(update={'created_by': current_user})
         await self._ensure_editor_access(current_user, create_data.workspace_id)
@@ -114,13 +114,13 @@ class ShoppingListsService(BaseService):
         return created
 
     async def create(
-        self,
-        create_data: ShoppingListCreateDTO,
-        current_user: UUID,
-        *,
-        expected_workspace_version: int | None = None,
-        record_change: bool = False,
-        items: list[ListItemCreateDTO] | None = None,
+            self,
+            create_data: ShoppingListCreateDTO,
+            current_user: UUID,
+            *,
+            expected_workspace_version: int | None = None,
+            record_change: bool = False,
+            items: list[ListItemCreateDTO] | None = None,
     ) -> ShoppingListDTO:
         normalized_create_data = create_data.model_copy(update={'created_by': current_user})
         await self._ensure_editor_access(current_user, normalized_create_data.workspace_id)
@@ -181,19 +181,19 @@ class ShoppingListsService(BaseService):
         return created
 
     async def create_deferred(
-        self,
-        create_data: ShoppingListCreateDTO,
-        current_user: UUID,
+            self,
+            create_data: ShoppingListCreateDTO,
+            current_user: UUID,
     ) -> None:
         await self._create_core(create_data, current_user, deferred=True)
 
     async def patch(
-        self,
-        patch_data: ShoppingListPatchDTO,
-        current_user: UUID,
-        *,
-        expected_workspace_version: int | None = None,
-        record_change: bool = False,
+            self,
+            patch_data: ShoppingListPatchDTO,
+            current_user: UUID,
+            *,
+            expected_workspace_version: int | None = None,
+            record_change: bool = False,
     ) -> ShoppingListDTO:
         workspace_id = await self._get_workspace_id_for_list(patch_data.id)
         await self._ensure_editor_access(current_user, workspace_id)
@@ -243,12 +243,12 @@ class ShoppingListsService(BaseService):
         return updated
 
     async def delete(
-        self,
-        list_id: UUID,
-        current_user: UUID,
-        *,
-        expected_workspace_version: int | None = None,
-        record_change: bool = False,
+            self,
+            list_id: UUID,
+            current_user: UUID,
+            *,
+            expected_workspace_version: int | None = None,
+            record_change: bool = False,
     ) -> None:
         workspace_id = await self._get_workspace_id_for_list(list_id)
         await self._ensure_editor_access(current_user, workspace_id)
@@ -278,11 +278,10 @@ class ShoppingListsService(BaseService):
 
         self._log_info("Shopping list was deleted", extra={'list_id': list_id})
 
-
     async def list_for_user(
-        self,
-        current_user: UUID,
-        workspace_id: UUID | None = None,
+            self,
+            current_user: UUID,
+            workspace_id: UUID | None = None,
     ) -> list[ShoppingListDTO]:
         if workspace_id is not None:
             await self._ensure_member_access(current_user, workspace_id, ShoppingListDTO)
@@ -294,9 +293,9 @@ class ShoppingListsService(BaseService):
         return await self.uow.shopping_lists.get_all(workspace_id=workspace_ids)
 
     async def get_with_items(
-        self,
-        list_id: UUID,
-        current_user: UUID,
+            self,
+            list_id: UUID,
+            current_user: UUID,
     ) -> ShoppingListRelItemDTO:
         shopping_list = await self.uow.shopping_lists.get_list_with_items(list_id)
         if not shopping_list:

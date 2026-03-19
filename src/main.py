@@ -1,11 +1,10 @@
-from fastapi import FastAPI
 import uvicorn
+from fastapi import FastAPI
 
 from api.auth import router as auth_router
 from api.shopping_lists import router as shopping_lists_router
 from api.workspaces import router as workspaces_router
 from schemas import rebuild_models
-
 
 rebuild_models()
 

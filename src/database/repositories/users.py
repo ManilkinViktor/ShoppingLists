@@ -1,14 +1,14 @@
 import uuid
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import select
-
-from schemas.users import UserDTO, UserAuthDTO, UserCreateAuthDTO
-from database.models import UsersOrm
-from database.repositories.base import BaseRepository
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.logger import logging_method_exception
+from database.models import UsersOrm
+from database.repositories.base import BaseRepository
+from schemas.users import UserDTO, UserAuthDTO, UserCreateAuthDTO
+
 
 class UsersRepository(
     BaseRepository[
@@ -39,6 +39,3 @@ class UsersRepository(
         result = await self._session.execute(query)
         instance: UsersOrm | None = result.scalar_one_or_none()
         return UserAuthDTO.model_validate(instance, from_attributes=True) if instance else None
-
-
-

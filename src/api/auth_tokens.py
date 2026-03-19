@@ -4,10 +4,9 @@ import jwt
 from fastapi import Response
 
 from api.http_exceptions import invalid_refresh_token_http_exception
-
+from api.schemas.auth import TokenDTO
 from core.config import settings
 from core.security import create_access_token, decode_token
-from api.schemas.auth import TokenDTO
 from schemas.users import UserDTO
 
 

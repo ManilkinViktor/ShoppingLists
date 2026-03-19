@@ -1,5 +1,5 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import find_dotenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -16,11 +16,9 @@ class Settings(BaseSettings):
     JWT_REFRESH_COOKIE_SECURE: bool = False
     JWT_REFRESH_COOKIE_SAMESITE: str = 'lax'
 
-
     @property
     def database_url(self) -> str:
         return f'postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}'
-
 
     model_config = SettingsConfigDict(
         env_file=find_dotenv(),

@@ -1,13 +1,11 @@
-import datetime, uuid
+import datetime
+import uuid
 
-from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import UUID, TIMESTAMP
-
-
+from sqlalchemy.orm import Mapped, mapped_column
 from uuid_utils import uuid7
 
 from utils.datetime_utils import utc_now
-
 
 
 class TimestampMixin:
@@ -28,10 +26,11 @@ class TimestampMixin:
         default=None,
     )
 
+
 class UUIDMixin:
     __abstract__ = True
 
-    repr_attrs = ('id', )
+    repr_attrs = ('id',)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

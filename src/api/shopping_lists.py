@@ -33,15 +33,14 @@ from services.exceptions import DomainException
 from services.list_items import ListItemsService
 from services.shopping_lists import ShoppingListsService
 
-
 router = APIRouter(prefix='/shopping-lists', tags=['shopping-lists'])
 
 
 @router.get('', response_model=list[ShoppingListDTO])
 async def list_shopping_lists(
-    current_user: CurrentUser,
-    uow: UoWDep,
-    workspace_id: uuid.UUID | None = None,
+        current_user: CurrentUser,
+        uow: UoWDep,
+        workspace_id: uuid.UUID | None = None,
 ) -> list[ShoppingListDTO]:
     shopping_lists_service = ShoppingListsService(uow)
     try:
@@ -57,9 +56,9 @@ async def list_shopping_lists(
 
 @router.get('/{list_id}', response_model=ShoppingListRelItemDTO)
 async def get_shopping_list(
-    list_id: uuid.UUID,
-    current_user: CurrentUser,
-    uow: UoWDep,
+        list_id: uuid.UUID,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> ShoppingListRelItemDTO:
     shopping_lists_service = ShoppingListsService(uow)
     try:
@@ -72,9 +71,9 @@ async def get_shopping_list(
 
 @router.get('/{list_id}/items', response_model=list[ListItemDTO])
 async def get_list_items(
-    list_id: uuid.UUID,
-    current_user: CurrentUser,
-    uow: UoWDep,
+        list_id: uuid.UUID,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> list[ListItemDTO]:
     list_items_service = ListItemsService(uow)
     try:
@@ -87,10 +86,10 @@ async def get_list_items(
 
 @router.get('/{list_id}/items/{item_id}', response_model=ListItemDTO)
 async def get_list_item(
-    list_id: uuid.UUID,
-    item_id: uuid.UUID,
-    current_user: CurrentUser,
-    uow: UoWDep,
+        list_id: uuid.UUID,
+        item_id: uuid.UUID,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> ListItemDTO:
     list_items_service = ListItemsService(uow)
     try:
@@ -103,9 +102,9 @@ async def get_list_item(
 
 @router.post('', response_model=ShoppingListDTO, status_code=status.HTTP_201_CREATED)
 async def create_shopping_list(
-    payload: ShoppingListCreateWithItemsDTO,
-    current_user: CurrentUser,
-    uow: UoWDep,
+        payload: ShoppingListCreateWithItemsDTO,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> ShoppingListDTO:
     shopping_lists_service = ShoppingListsService(uow)
     list_data = ShoppingListCreateDTO(
@@ -133,10 +132,10 @@ async def create_shopping_list(
 
 @router.patch('/{list_id}', response_model=ShoppingListDTO)
 async def patch_shopping_list(
-    list_id: uuid.UUID,
-    payload: ShoppingListPatchRequestDTO,
-    current_user: CurrentUser,
-    uow: UoWDep,
+        list_id: uuid.UUID,
+        payload: ShoppingListPatchRequestDTO,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> ShoppingListDTO:
     shopping_lists_service = ShoppingListsService(uow)
     try:
@@ -158,10 +157,10 @@ async def patch_shopping_list(
 
 @router.delete('/{list_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_shopping_list(
-    list_id: uuid.UUID,
-    payload: ShoppingListDeleteRequestDTO,
-    current_user: CurrentUser,
-    uow: UoWDep,
+        list_id: uuid.UUID,
+        payload: ShoppingListDeleteRequestDTO,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> None:
     shopping_lists_service = ShoppingListsService(uow)
     try:
@@ -180,10 +179,10 @@ async def delete_shopping_list(
 
 @router.post('/{list_id}/items', response_model=list[ListItemDTO], status_code=status.HTTP_201_CREATED)
 async def create_list_items(
-    list_id: uuid.UUID,
-    payload: ListItemsCreateRequestDTO,
-    current_user: CurrentUser,
-    uow: UoWDep,
+        list_id: uuid.UUID,
+        payload: ListItemsCreateRequestDTO,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> list[ListItemDTO]:
     list_items_service = ListItemsService(uow)
     items = [
@@ -210,10 +209,10 @@ async def create_list_items(
 
 @router.patch('/{list_id}/items', response_model=list[ListItemDTO])
 async def patch_list_items(
-    list_id: uuid.UUID,
-    payload: ListItemsPatchRequestDTO,
-    current_user: CurrentUser,
-    uow: UoWDep,
+        list_id: uuid.UUID,
+        payload: ListItemsPatchRequestDTO,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> list[ListItemDTO]:
     list_items_service = ListItemsService(uow)
     items = [ListItemPatchDTO(**item.model_dump()) for item in payload.items]
@@ -237,10 +236,10 @@ async def patch_list_items(
 
 @router.delete('/{list_id}/items', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_list_items(
-    list_id: uuid.UUID,
-    payload: ListItemsDeleteRequestDTO,
-    current_user: CurrentUser,
-    uow: UoWDep,
+        list_id: uuid.UUID,
+        payload: ListItemsDeleteRequestDTO,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> None:
     list_items_service = ListItemsService(uow)
     try:
@@ -258,5 +257,3 @@ async def delete_list_items(
         raise domain_to_http_exception(error) from None
     except IntegrityError as error:
         raise integrity_error_to_http_exception(error) from None
-
-

@@ -4,15 +4,15 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.repositories.workspaces import WorkspacesRepository
-from database.repositories.workspace_members import WorkspaceMembersRepository
 from database.repositories.list_items import ListItemsRepository
-from database.repositories.shopping_lists import ShoppingListsRepository
-from database.repositories.workspace_changes import WorkspaceChangesRepository
-from database.repositories.users import UsersRepository
 from database.repositories.refresh_sessions import RefreshSessionsRepository
-
+from database.repositories.shopping_lists import ShoppingListsRepository
+from database.repositories.users import UsersRepository
+from database.repositories.workspace_changes import WorkspaceChangesRepository
+from database.repositories.workspace_members import WorkspaceMembersRepository
+from database.repositories.workspaces import WorkspacesRepository
 from database.session import session_factory
+
 
 class UnitOfWork:
     def __init__(self, session: AsyncSession) -> None:
@@ -31,7 +31,7 @@ class UnitOfWork:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         if exc_type:
-           await self._session.rollback()
+            await self._session.rollback()
         await self._session.close()
 
     async def commit(self) -> None:
@@ -64,7 +64,6 @@ class UnitOfWork:
                 *entry['args'],
                 **entry['kwargs']
             )
-
 
     @property
     def users(self) -> UsersRepository:

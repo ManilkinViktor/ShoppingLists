@@ -1,12 +1,11 @@
-import pytest
-from pathlib import Path
 import sys
 import uuid
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from uuid_utils import uuid7
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SRC_PATH = PROJECT_ROOT / "src"
@@ -43,11 +42,11 @@ def _uuid7() -> uuid.UUID:
 
 
 def _build_uow(
-    *,
-    members: list[SimpleNamespace],
-    workspaces: list[SimpleNamespace] | None = None,
-    compare_versions_result: dict[uuid.UUID, int] | None = None,
-    changes_result: list[WorkspaceChangeCreateDTO] | None = None,
+        *,
+        members: list[SimpleNamespace],
+        workspaces: list[SimpleNamespace] | None = None,
+        compare_versions_result: dict[uuid.UUID, int] | None = None,
+        changes_result: list[WorkspaceChangeCreateDTO] | None = None,
 ) -> SimpleNamespace:
     uow = SimpleNamespace()
     uow.log = MagicMock()
@@ -78,6 +77,7 @@ def _wire_dummy_services(sync_service: WorkspaceSyncService) -> DummyCrudService
         "list_items": list_item_service,
     }
     return workspace_service
+
 
 @pytest.mark.asyncio
 async def test_workspace_sync_push_duplicate_workspace_ids_raises() -> None:
@@ -214,7 +214,6 @@ async def test_workspace_sync_push_grouped_item_create_uses_batch_method() -> No
         ),
         user_id,
     )
-
 
 
 @pytest.mark.asyncio

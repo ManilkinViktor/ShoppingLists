@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
-from schemas.mixins import UUIDMixinDTO
 from core.constants import FieldConstraints
+from schemas.mixins import UUIDMixinDTO
 
 
 class WorkspaceVersionRequestDTO(BaseModel):
@@ -9,13 +9,13 @@ class WorkspaceVersionRequestDTO(BaseModel):
 
 
 class WorkspaceCreateRequestDTO(UUIDMixinDTO):
-    name: str = Field(min_length=1, max_length=FieldConstraints.base_len)
-    description: str | None = Field(max_length=FieldConstraints.base_len)
+    name: str = Field(min_length=1, max_length=FieldConstraints.BASE_LEN)
+    description: str | None = Field(max_length=FieldConstraints.BASE_LEN)
 
 
 class WorkspacePatchRequestDTO(WorkspaceVersionRequestDTO):
-    name: str | None = Field(default=None, min_length=1, max_length=FieldConstraints.base_len)
-    description: str | None = Field(default=None, max_length=FieldConstraints.base_len)
+    name: str | None = Field(default=None, min_length=1, max_length=FieldConstraints.BASE_LEN)
+    description: str | None = Field(default=None, max_length=FieldConstraints.BASE_LEN)
 
 
 class WorkspaceDeleteRequestDTO(WorkspaceVersionRequestDTO):

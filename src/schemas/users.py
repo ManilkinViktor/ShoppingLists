@@ -1,23 +1,26 @@
-from typing import Annotated, TYPE_CHECKING, TypeAlias
 from abc import ABC
+from typing import Annotated, TYPE_CHECKING, TypeAlias
 
 from pydantic import EmailStr, Field, model_validator, BaseModel
 
-from schemas.mixins import UUIDMixinDTO, TimeStampMixinDTO
 from core.constants import FieldConstraints
+from schemas.mixins import UUIDMixinDTO, TimeStampMixinDTO
 
 if TYPE_CHECKING:
     from schemas.workspace_members import WorkspaceMemberRelWorkspaceDTO
 
+
 class UserBaseDTO(UUIDMixinDTO, ABC):
-    name: str = Field(min_length=1, max_length=FieldConstraints.base_len)
+    name: str = Field(min_length=1, max_length=FieldConstraints.BASE_LEN)
     email: EmailStr
 
 
 class UserDTO(UserBaseDTO, TimeStampMixinDTO):
     pass
 
-password_field: TypeAlias = Annotated[str, Field(min_length=FieldConstraints.min_password, max_length=FieldConstraints.base_len)]
+
+password_field: TypeAlias = Annotated[
+    str, Field(min_length=FieldConstraints.MIN_PASSWORD, max_length=FieldConstraints.BASE_LEN)]
 
 
 class PasswordWithConfirm(BaseModel):

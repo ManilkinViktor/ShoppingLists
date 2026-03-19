@@ -10,7 +10,7 @@ class UserLoginDTO(BaseModel):
 
 
 class UserRegisterDTO(PasswordWithConfirm):
-    name: str = Field(min_length=1, max_length=FieldConstraints.base_len)
+    name: str = Field(min_length=1, max_length=FieldConstraints.BASE_LEN)
     email: EmailStr
 
 

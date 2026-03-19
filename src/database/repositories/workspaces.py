@@ -1,13 +1,14 @@
 import uuid
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, tuple_, update
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, with_loader_criteria
 
-from database.models import WorkspacesOrm, ShoppingListsOrm, WorkspaceMembersOrm, ListItemsOrm
 from core.enums import Role
-from schemas.workspaces import WorkspaceDTO, WorkspaceCreateDTO, WorkspaceRelListDTO
+from database.models import WorkspacesOrm, ShoppingListsOrm, WorkspaceMembersOrm, ListItemsOrm
 from database.repositories.base import BaseRepository
+from schemas.workspaces import WorkspaceDTO, WorkspaceCreateDTO, WorkspaceRelListDTO
+
 
 class WorkspacesRepository(
     BaseRepository[
@@ -21,7 +22,6 @@ class WorkspacesRepository(
             _session,
             _model=WorkspacesOrm, _add_dto=WorkspaceCreateDTO, _dto=WorkspaceDTO
         )
-
 
     async def get_workspace_with_lists(self, workspace_id: uuid.UUID) -> WorkspaceRelListDTO | None:
         """Return workspace with lists together list's items"""
@@ -48,8 +48,8 @@ class WorkspacesRepository(
         return WorkspaceRelListDTO.model_validate(workspace, from_attributes=True) if workspace else None
 
     async def get_accessible_user_workspaces(
-        self,
-        user_id: uuid.UUID,
+            self,
+            user_id: uuid.UUID,
     ) -> list[WorkspaceDTO]:
         """Return accessible users workspaces without nested lists/items."""
         query = (
@@ -67,8 +67,8 @@ class WorkspacesRepository(
         ]
 
     async def get_accessible_user_workspaces_with_lists(
-        self,
-        user_id: uuid.UUID,
+            self,
+            user_id: uuid.UUID,
     ) -> list[WorkspaceRelListDTO]:
         """Return accessible users workspaces with role and list together list's items"""
         query = (
@@ -99,7 +99,6 @@ class WorkspacesRepository(
             workspace_dto = WorkspaceRelListDTO.model_validate(workspace, from_attributes=True)
             accessible_workspaces.append(workspace_dto.model_copy(update={'role': role}))
 
-
         return accessible_workspaces
 
     async def compare_and_bump_version(self, workspace_id: uuid.UUID, expected_version: int) -> bool:
@@ -119,8 +118,8 @@ class WorkspacesRepository(
         return bool(result.scalar_one_or_none())
 
     async def compare_and_bump_versions(
-        self,
-        expected_versions: dict[uuid.UUID, int],
+            self,
+            expected_versions: dict[uuid.UUID, int],
     ) -> dict[uuid.UUID, int]:
         if not expected_versions:
             return {}

@@ -1,7 +1,7 @@
+from core.security import check_password
 from schemas.users import UserAuthDTO, UserDTO
 from services.base import BaseService
 from services.exceptions import InvalidCredentials
-from core.security import check_password
 
 
 class AuthService(BaseService):

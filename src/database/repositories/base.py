@@ -1,13 +1,13 @@
 from collections.abc import Collection
 from typing import Generic, TypeVar, Type, Any, Sequence
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import inspect, select, or_, update, delete as sa_delete
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.logger import LoggerMeta, logging_method_exception
 from database.base import Base
 from schemas.types import CreateDTO, DTO
-from core.logger import LoggerMeta, logging_method_exception
 from utils.datetime_utils import utc_now
 
 ModelOrm = TypeVar('ModelOrm', bound=Base)
@@ -145,8 +145,8 @@ class BaseRepository(Generic[ModelOrm, CreateDTO, DTO], metaclass=LoggerMeta):
 
     @logging_method_exception(SQLAlchemyError)
     async def update_many(
-        self,
-        update_data_by_id: dict[Any, dict[str, Any]],
+            self,
+            update_data_by_id: dict[Any, dict[str, Any]],
     ) -> int:
         if not update_data_by_id:
             return 0

@@ -1,5 +1,5 @@
 import uuid
-from typing import Literal,  Union
+from typing import Literal, Union
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -61,7 +61,6 @@ class UnionOperation(RootModel):
         ListItemsPatchOperation,
         ListItemsDeleteOperation,
     ] = Field(discriminator='op')
-
 
 
 class WorkspaceChangeCreateDTO(BaseModel):

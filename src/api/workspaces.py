@@ -17,17 +17,16 @@ from schemas.workspace_changes import (
 )
 from schemas.workspaces import WorkspaceCreateDTO, WorkspacePatchDTO, WorkspaceDTO, WorkspaceRelListDTO
 from services.exceptions import DomainException
-from services.workspaces import WorkspacesService
 from services.workspace_sync import WorkspaceSyncService
-
+from services.workspaces import WorkspacesService
 
 router = APIRouter(prefix='/workspaces', tags=['workspaces'])
 
 
 @router.get('', response_model=list[WorkspaceDTO])
 async def list_workspaces(
-    current_user: CurrentUser,
-    uow: UoWDep,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> list[WorkspaceDTO]:
     workspaces_service = WorkspacesService(uow)
     try:
@@ -40,8 +39,8 @@ async def list_workspaces(
 
 @router.get('/full', response_model=list[WorkspaceRelListDTO])
 async def list_workspaces_with_lists(
-    current_user: CurrentUser,
-    uow: UoWDep,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> list[WorkspaceRelListDTO]:
     workspaces_service = WorkspacesService(uow)
     try:
@@ -54,9 +53,9 @@ async def list_workspaces_with_lists(
 
 @router.get('/{workspace_id}', response_model=WorkspaceRelListDTO)
 async def get_workspace(
-    workspace_id: uuid.UUID,
-    current_user: CurrentUser,
-    uow: UoWDep,
+        workspace_id: uuid.UUID,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> WorkspaceRelListDTO:
     workspaces_service = WorkspacesService(uow)
     try:
@@ -69,9 +68,9 @@ async def get_workspace(
 
 @router.post('', response_model=WorkspaceDTO, status_code=status.HTTP_201_CREATED)
 async def create_workspace(
-    payload: WorkspaceCreateRequestDTO,
-    current_user: CurrentUser,
-    uow: UoWDep,
+        payload: WorkspaceCreateRequestDTO,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> WorkspaceDTO:
     workspaces_service = WorkspacesService(uow)
     workspace_data = WorkspaceCreateDTO(
@@ -95,10 +94,10 @@ async def create_workspace(
 
 @router.patch('/{workspace_id}', response_model=WorkspaceDTO)
 async def patch_workspace(
-    workspace_id: uuid.UUID,
-    payload: WorkspacePatchRequestDTO,
-    current_user: CurrentUser,
-    uow: UoWDep,
+        workspace_id: uuid.UUID,
+        payload: WorkspacePatchRequestDTO,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> WorkspaceDTO:
     workspaces_service = WorkspacesService(uow)
     try:
@@ -120,10 +119,10 @@ async def patch_workspace(
 
 @router.delete('/{workspace_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_workspace(
-    workspace_id: uuid.UUID,
-    payload: WorkspaceDeleteRequestDTO,
-    current_user: CurrentUser,
-    uow: UoWDep,
+        workspace_id: uuid.UUID,
+        payload: WorkspaceDeleteRequestDTO,
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> None:
     workspaces_service = WorkspacesService(uow)
     try:
@@ -142,9 +141,9 @@ async def delete_workspace(
 
 @router.post('/sync/pull', response_model=list[WorkspaceChangeCreateDTO], status_code=status.HTTP_200_OK)
 async def pull_workspace_changes(
-    versions: list[WorkspaceVersionDTO],
-    current_user: CurrentUser,
-    uow: UoWDep,
+        versions: list[WorkspaceVersionDTO],
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> list[WorkspaceChangeCreateDTO]:
     sync_service = WorkspaceSyncService(uow)
     try:
@@ -158,9 +157,9 @@ async def pull_workspace_changes(
 
 @router.post('/sync/push', response_model=list[WorkspacePushResultDTO], status_code=status.HTTP_200_OK)
 async def push_workspace_changes(
-    changes: list[WorkspaceChangeCreateDTO],
-    current_user: CurrentUser,
-    uow: UoWDep,
+        changes: list[WorkspaceChangeCreateDTO],
+        current_user: CurrentUser,
+        uow: UoWDep,
 ) -> list[WorkspacePushResultDTO]:
     sync_service = WorkspaceSyncService(uow)
     try:
@@ -171,5 +170,3 @@ async def push_workspace_changes(
     except IntegrityError as error:
         raise integrity_error_to_http_exception(error) from None
     return result
-
-

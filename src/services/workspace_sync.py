@@ -1,26 +1,28 @@
-from uuid import UUID
 from typing import Protocol
+from uuid import UUID
 
+from core.enums import Role
+from database.uow import UnitOfWork
 from schemas.types import CreateDTO, DeleteArg, PatchDTO
-from schemas.workspaces import WorkspaceDTO
 from schemas.workspace_changes import (
     UnionOperation,
     WorkspaceChangeCreateDTO,
     WorkspaceVersionDTO,
     WorkspacePushResultDTO,
 )
-from core.enums import Role
+from schemas.workspaces import WorkspaceDTO
 from services.base import BaseService
 from services.exceptions import DuplicateWorkspaceSyncPayload, EntityNotFound
-from database.uow import UnitOfWork
-from services.workspaces import WorkspacesService
-from services.shopping_lists import ShoppingListsService
 from services.list_items import ListItemsService
+from services.shopping_lists import ShoppingListsService
+from services.workspaces import WorkspacesService
 
 
 class CrudService(Protocol[CreateDTO, PatchDTO, DeleteArg]):
     async def create_deferred(self, data: CreateDTO, current_user: UUID) -> None: ...
+
     async def patch(self, data: PatchDTO, current_user: UUID) -> object: ...
+
     async def delete(self, data: DeleteArg, current_user: UUID) -> None: ...
 
 
@@ -37,9 +39,9 @@ class WorkspaceSyncService(BaseService):
         }
 
     def _get_requested_workspace_ids(
-        self,
-        current_user: UUID,
-        workspace_changes: list[WorkspaceChangeCreateDTO],
+            self,
+            current_user: UUID,
+            workspace_changes: list[WorkspaceChangeCreateDTO],
     ) -> tuple[list[UUID], set[UUID]]:
         workspace_ids: list[UUID] = [change.workspace_id for change in workspace_changes]
         requested_workspace_ids: set[UUID] = set(workspace_ids)
@@ -52,9 +54,9 @@ class WorkspaceSyncService(BaseService):
         return workspace_ids, requested_workspace_ids
 
     def _get_requested_workspace_versions(
-        self,
-        current_user: UUID,
-        workspace_versions: list[WorkspaceVersionDTO],
+            self,
+            current_user: UUID,
+            workspace_versions: list[WorkspaceVersionDTO],
     ) -> tuple[list[UUID], set[UUID]]:
         workspace_ids: list[UUID] = [entry.workspace_id for entry in workspace_versions]
         requested_workspace_ids: set[UUID] = set(workspace_ids)
@@ -67,8 +69,8 @@ class WorkspaceSyncService(BaseService):
         return workspace_ids, requested_workspace_ids
 
     async def _get_accessible_workspace_ids(
-        self,
-        current_user: UUID,
+            self,
+            current_user: UUID,
     ) -> tuple[set[UUID], set[UUID]]:
         members = await self.uow.workspace_members.get_all(user_id=current_user)
         accessible_workspace_ids: set[UUID] = {member.workspace_id for member in members}
@@ -78,9 +80,9 @@ class WorkspaceSyncService(BaseService):
         return accessible_workspace_ids, editable_workspace_ids
 
     async def _ensure_workspace_access(
-        self,
-        current_user: UUID,
-        workspace_changes: list[WorkspaceChangeCreateDTO],
+            self,
+            current_user: UUID,
+            workspace_changes: list[WorkspaceChangeCreateDTO],
     ) -> tuple[list[UUID], set[UUID], set[UUID], set[UUID]]:
         requested_workspace_ids_ordered, requested_workspace_ids = self._get_requested_workspace_ids(
             current_user, workspace_changes
@@ -112,9 +114,9 @@ class WorkspaceSyncService(BaseService):
         return workspaces
 
     async def _primary_version_check(
-        self,
-        accessible_workspace_ids: set[UUID],
-        request_versions: dict[UUID, int],
+            self,
+            accessible_workspace_ids: set[UUID],
+            request_versions: dict[UUID, int],
     ) -> tuple[set[UUID], dict[UUID, int]]:
         workspaces: list[WorkspaceDTO] = await self._get_workspaces_by_id(accessible_workspace_ids)
         request_versions_full: dict[UUID, int] = {
@@ -130,9 +132,9 @@ class WorkspaceSyncService(BaseService):
         return outdated_workspace_ids, request_versions_full
 
     async def _apply_operations(
-        self,
-        current_user: UUID,
-        workspace_change: WorkspaceChangeCreateDTO,
+            self,
+            current_user: UUID,
+            workspace_change: WorkspaceChangeCreateDTO,
     ) -> None:
         for wrapper in workspace_change.changes:
             op_data = wrapper.root
@@ -150,10 +152,10 @@ class WorkspaceSyncService(BaseService):
                 raise ValueError(f'Unknown operation action: {action}')
 
     async def _apply_changes(
-        self,
-        current_user: UUID,
-        workspace_changes: list[WorkspaceChangeCreateDTO],
-        eligible_workspace_ids: set[UUID],
+            self,
+            current_user: UUID,
+            workspace_changes: list[WorkspaceChangeCreateDTO],
+            eligible_workspace_ids: set[UUID],
     ) -> tuple[list[WorkspaceChangeCreateDTO], dict[UUID, int], dict[UUID, int]]:
         bump_candidates: list[WorkspaceChangeCreateDTO] = []
         for change in workspace_changes:
@@ -185,17 +187,17 @@ class WorkspaceSyncService(BaseService):
 
     @staticmethod
     def _finalize_bump_versions(
-        outdated_workspace_ids: set[UUID],
-        expected_bump_versions: dict[UUID, int],
-        bumped_workspace_versions: dict[UUID, int],
+            outdated_workspace_ids: set[UUID],
+            expected_bump_versions: dict[UUID, int],
+            bumped_workspace_versions: dict[UUID, int],
     ) -> set[UUID]:
         race_outdated_ids: set[UUID] = set(expected_bump_versions) - set(bumped_workspace_versions)
         return outdated_workspace_ids | race_outdated_ids
 
     async def _get_required_sync_changes(
-        self,
-        outdated_workspace_ids: set[UUID],
-        request_versions: dict[UUID, int],
+            self,
+            outdated_workspace_ids: set[UUID],
+            request_versions: dict[UUID, int],
     ) -> dict[UUID, list[UnionOperation]]:
         outdated_workspace_versions: dict[UUID, int] = {
             workspace_id: request_versions[workspace_id]
@@ -213,11 +215,10 @@ class WorkspaceSyncService(BaseService):
             operations.extend(required_change.changes)
         return required_operations_by_workspace
 
-
     async def pull_changes(
-        self,
-        current_user: UUID,
-        workspace_versions: list[WorkspaceVersionDTO],
+            self,
+            current_user: UUID,
+            workspace_versions: list[WorkspaceVersionDTO],
     ) -> list[WorkspaceChangeCreateDTO]:
         _requested_ordered, requested_workspace_ids = self._get_requested_workspace_versions(
             current_user,
@@ -244,9 +245,9 @@ class WorkspaceSyncService(BaseService):
         return await self.uow.workspace_changes.get_since_versions(request_versions_full)
 
     async def push_changes(
-        self,
-        current_user: UUID,
-        workspace_changes: list[WorkspaceChangeCreateDTO],
+            self,
+            current_user: UUID,
+            workspace_changes: list[WorkspaceChangeCreateDTO],
     ) -> list[WorkspacePushResultDTO]:
         (
             requested_workspace_ids_ordered,
@@ -271,10 +272,10 @@ class WorkspaceSyncService(BaseService):
             request_versions,
         )
         non_editable_requested_ids: set[UUID] = (
-            requested_workspace_ids_with_changes - editable_workspace_ids
+                requested_workspace_ids_with_changes - editable_workspace_ids
         )
         eligible_workspace_ids: set[UUID] = (
-            requested_workspace_ids - outdated_workspace_ids - non_editable_requested_ids
+                requested_workspace_ids - outdated_workspace_ids - non_editable_requested_ids
         )
         self.uow.set_defer_flush(True)
         try:
@@ -289,7 +290,7 @@ class WorkspaceSyncService(BaseService):
             bumped_workspace_versions,
         )
         accepted_workspace_ids: set[UUID] = (
-            requested_workspace_ids - outdated_workspace_ids - non_editable_requested_ids
+                requested_workspace_ids - outdated_workspace_ids - non_editable_requested_ids
         )
         return [
             WorkspacePushResultDTO(

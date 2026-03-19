@@ -1,16 +1,16 @@
-from typing import TYPE_CHECKING, Any
 import datetime
 import uuid
+from typing import TYPE_CHECKING, Any
 
-
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import TIMESTAMP, ForeignKey, PrimaryKeyConstraint, JSON
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.base import Base
 from utils.datetime_utils import utc_now
 
 if TYPE_CHECKING:
     from database.models import WorkspacesOrm
+
 
 class WorkspaceChangesOrm(Base):
     __tablename__ = 'workspace_changes'
@@ -31,4 +31,3 @@ class WorkspaceChangesOrm(Base):
     __table_args__ = (
         PrimaryKeyConstraint('workspace_id', 'workspace_version'),
     )
-

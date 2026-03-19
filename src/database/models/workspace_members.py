@@ -12,6 +12,7 @@ from utils.datetime_utils import utc_now
 if TYPE_CHECKING:
     from database.models import WorkspacesOrm, UsersOrm
 
+
 class WorkspaceMembersOrm(Base):
     __tablename__ = 'workspace_members'
 

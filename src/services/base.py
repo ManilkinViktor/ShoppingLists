@@ -1,12 +1,12 @@
 from logging import Logger, DEBUG, INFO, WARNING, ERROR, CRITICAL
 from uuid import UUID
 
-from schemas.workspace_changes import WorkspaceChangeCreateDTO, UnionOperation
-from schemas.workspaces import WorkspaceDTO
-
 from core.logger import LoggerMeta
 from database.uow import UnitOfWork
+from schemas.workspace_changes import WorkspaceChangeCreateDTO, UnionOperation
+from schemas.workspaces import WorkspaceDTO
 from services.exceptions import EntityNotFound, WorkspaceVersionMismatch
+
 
 class BaseService(metaclass=LoggerMeta):
     logger: Logger
@@ -32,9 +32,9 @@ class BaseService(metaclass=LoggerMeta):
         self.uow.log(self.logger, CRITICAL, msg, *args, **kwargs)
 
     async def _bump_workspace_version_or_raise(
-        self,
-        workspace_id: UUID,
-        workspace_version: int,
+            self,
+            workspace_id: UUID,
+            workspace_version: int,
     ) -> int:
         bumped = await self.uow.workspaces.compare_and_bump_version(workspace_id, workspace_version)
         if bumped:
@@ -51,10 +51,10 @@ class BaseService(metaclass=LoggerMeta):
         raise WorkspaceVersionMismatch
 
     async def _add_workspace_change(
-        self,
-        workspace_id: UUID,
-        workspace_version: int,
-        changes: list[UnionOperation],
+            self,
+            workspace_id: UUID,
+            workspace_version: int,
+            changes: list[UnionOperation],
     ) -> None:
         await self.uow.workspace_changes.add_all(
             [

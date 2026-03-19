@@ -1,10 +1,9 @@
-import pytest
+import sys
 import uuid
 from pathlib import Path
-import sys
 
+import pytest
 from uuid_utils import uuid7
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SRC_PATH = PROJECT_ROOT / "src"

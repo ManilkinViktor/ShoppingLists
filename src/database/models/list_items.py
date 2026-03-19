@@ -1,12 +1,12 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, ForeignKey, CheckConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from database.mixins import UUIDMixin, TimestampMixin
-from database.base import Base
 from core.constants import FieldConstraints
+from database.base import Base
+from database.mixins import UUIDMixin, TimestampMixin
 
 if TYPE_CHECKING:
     from database.models import ShoppingListsOrm
@@ -18,10 +18,10 @@ class ListItemsOrm(UUIDMixin, TimestampMixin, Base):
     cnt_repr_attrs = 2
 
     list_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('shopping_lists.id', ondelete='CASCADE'))
-    name: Mapped[str] = mapped_column(String(FieldConstraints.base_len))
+    name: Mapped[str] = mapped_column(String(FieldConstraints.BASE_LEN))
     quantity: Mapped[int | None]
-    unit: Mapped[str | None] = mapped_column(String(FieldConstraints.base_len))
-    category: Mapped[str | None] = mapped_column(String(FieldConstraints.base_len))
+    unit: Mapped[str | None] = mapped_column(String(FieldConstraints.BASE_LEN))
+    category: Mapped[str | None] = mapped_column(String(FieldConstraints.BASE_LEN))
     is_purchased: Mapped[bool] = mapped_column(default=False)
 
     shopping_list: Mapped['ShoppingListsOrm'] = relationship(
@@ -31,6 +31,3 @@ class ListItemsOrm(UUIDMixin, TimestampMixin, Base):
     __table_args__ = (
         CheckConstraint('quantity > 0', name='check_positive_quantity'),
     )
-
-
-

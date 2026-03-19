@@ -1,12 +1,13 @@
 import uuid
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, with_loader_criteria
 
-from database.repositories.base import BaseRepository
 from database.models import ShoppingListsOrm, ListItemsOrm
+from database.repositories.base import BaseRepository
 from schemas.shopping_lists import ShoppingListDTO, ShoppingListCreateDTO, ShoppingListRelItemDTO
+
 
 class ShoppingListsRepository(
     BaseRepository[

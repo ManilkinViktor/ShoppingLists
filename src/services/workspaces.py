@@ -1,5 +1,7 @@
 ﻿from uuid import UUID
 
+from core.enums import Role
+from database.uow import UnitOfWork
 from schemas.workspace_changes import (
     WorkspaceCreateOperation,
     WorkspaceDeleteOperation,
@@ -8,8 +10,6 @@ from schemas.workspace_changes import (
 )
 from schemas.workspace_members import WorkspaceMemberCreateDTO
 from schemas.workspaces import WorkspaceCreateDTO, WorkspaceDTO, WorkspacePatchDTO, WorkspaceRelListDTO
-from core.enums import Role
-from database.uow import UnitOfWork
 from services.base import BaseService
 from services.exceptions import ConflictUUID, EntityNotFound
 
@@ -56,11 +56,11 @@ class WorkspacesService(BaseService):
             raise EntityNotFound(WorkspaceDTO)
 
     async def _create_core(
-        self,
-        workspace_data: WorkspaceCreateDTO,
-        current_user: UUID,
-        *,
-        deferred: bool,
+            self,
+            workspace_data: WorkspaceCreateDTO,
+            current_user: UUID,
+            *,
+            deferred: bool,
     ) -> WorkspaceDTO | None:
         workspace_data = workspace_data.model_copy(update={'owner_id': current_user})
         found_workspace: WorkspaceDTO | None = await self.uow.workspaces.get(workspace_data.id)
@@ -88,10 +88,10 @@ class WorkspacesService(BaseService):
         return workspace
 
     async def create(
-        self,
-        workspace_data: WorkspaceCreateDTO,
-        current_user: UUID,
-        record_change: bool = False,
+            self,
+            workspace_data: WorkspaceCreateDTO,
+            current_user: UUID,
+            record_change: bool = False,
     ) -> WorkspaceDTO:
         workspace = await self._create_core(workspace_data, current_user, deferred=False)
         assert workspace is not None
@@ -115,9 +115,9 @@ class WorkspacesService(BaseService):
         return workspace
 
     async def create_deferred(
-        self,
-        workspace_data: WorkspaceCreateDTO,
-        current_user: UUID,
+            self,
+            workspace_data: WorkspaceCreateDTO,
+            current_user: UUID,
     ) -> None:
         await self._create_core(workspace_data, current_user, deferred=True)
 
@@ -129,12 +129,12 @@ class WorkspacesService(BaseService):
         )
 
     async def patch(
-        self,
-        patch_data: WorkspacePatchDTO,
-        current_user: UUID,
-        *,
-        expected_workspace_version: int | None = None,
-        record_change: bool = False,
+            self,
+            patch_data: WorkspacePatchDTO,
+            current_user: UUID,
+            *,
+            expected_workspace_version: int | None = None,
+            record_change: bool = False,
     ) -> WorkspaceDTO:
         await self._ensure_editor_access(current_user, patch_data.id)
 
@@ -178,12 +178,12 @@ class WorkspacesService(BaseService):
         return updated
 
     async def delete(
-        self,
-        workspace_id: UUID,
-        current_user: UUID,
-        *,
-        expected_workspace_version: int | None = None,
-        record_change: bool = False,
+            self,
+            workspace_id: UUID,
+            current_user: UUID,
+            *,
+            expected_workspace_version: int | None = None,
+            record_change: bool = False,
     ) -> None:
         await self._ensure_editor_access(current_user, workspace_id)
 
@@ -218,9 +218,9 @@ class WorkspacesService(BaseService):
         return await self.uow.workspaces.get_accessible_user_workspaces_with_lists(current_user)
 
     async def get_with_lists(
-        self,
-        workspace_id: UUID,
-        current_user: UUID,
+            self,
+            workspace_id: UUID,
+            current_user: UUID,
     ) -> WorkspaceRelListDTO:
         await self._ensure_member_access(current_user, workspace_id)
         workspace = await self.uow.workspaces.get_workspace_with_lists(workspace_id)

@@ -31,8 +31,8 @@ class WorkspaceChangesRepository:
         await self._flush_if_needed()
 
     async def get_since_versions(
-        self,
-        workspace_versions: dict[uuid.UUID, int],
+            self,
+            workspace_versions: dict[uuid.UUID, int],
     ) -> list[WorkspaceChangeCreateDTO]:
         if not workspace_versions:
             return []

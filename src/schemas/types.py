@@ -1,8 +1,6 @@
 from typing import TypeVar, Generic
-from uuid import UUID
 
 from pydantic import BaseModel
-
 
 CreateDTO = TypeVar('CreateDTO', bound=BaseModel)
 PatchDTO = TypeVar('PatchDTO', bound=BaseModel)

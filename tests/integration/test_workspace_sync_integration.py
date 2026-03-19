@@ -1,10 +1,9 @@
-import pytest
-from pathlib import Path
 import sys
 import uuid
+from pathlib import Path
 
+import pytest
 from uuid_utils import uuid7
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SRC_PATH = PROJECT_ROOT / "src"
@@ -141,7 +140,6 @@ async def test_workspace_sync_push_viewer_rejected() -> None:
 
             result = await sync_service.push_changes(user_id, [change])
 
-
             assert result[0].workspace_id == workspace_id
             assert result[0].accepted is False
 
@@ -156,6 +154,7 @@ async def test_workspace_sync_push_viewer_rejected() -> None:
             await uow.workspaces.delete(workspace_id)
             await uow.users.delete(user_id)
             await uow.commit()
+
 
 @pytest.mark.asyncio
 async def test_workspace_sync_pull_returns_missing_versions() -> None:

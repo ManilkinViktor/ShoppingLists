@@ -2,7 +2,6 @@ from sqlalchemy.orm import DeclarativeBase
 
 
 class Base(DeclarativeBase):
-
     cnt_repr_attrs = 1
     repr_attrs = tuple()
 

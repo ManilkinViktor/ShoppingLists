@@ -2,31 +2,30 @@ from fastapi import APIRouter, Cookie, Response, status
 from sqlalchemy.exc import IntegrityError
 from uuid_utils import uuid7
 
-from api.dependencies import CurrentUser, UoWDep
 from api.auth_tokens import build_access_token_response, clear_refresh_cookie, set_refresh_cookie, \
     decode_refresh_token_or_raise, decode_refresh_token
+from api.dependencies import CurrentUser, UoWDep
 from api.http_exceptions import (
     domain_to_http_exception,
     integrity_error_to_http_exception,
     invalid_refresh_token_http_exception,
 )
 from api.schemas.auth import TokenDTO, UserLoginDTO, UserRegisterDTO
-from core.security import create_refresh_token
 from core.config import settings
+from core.security import create_refresh_token
 from schemas.users import UserDTO, UserCreateDTO
 from services.auth import AuthService
-from services.users import UserService
 from services.exceptions import DomainException
-
+from services.users import UserService
 
 router = APIRouter(prefix='/auth', tags=['auth'])
 
 
 @router.post('/register', response_model=TokenDTO, status_code=status.HTTP_201_CREATED)
 async def register(
-    response: Response,
-    payload: UserRegisterDTO,
-    uow: UoWDep,
+        response: Response,
+        payload: UserRegisterDTO,
+        uow: UoWDep,
 ) -> TokenDTO:
     user_service = UserService(uow)
     user_data = UserCreateDTO(id=str(uuid7()), **payload.model_dump())
@@ -47,9 +46,9 @@ async def register(
 
 @router.post('/login', response_model=TokenDTO)
 async def login(
-    response: Response,
-    payload: UserLoginDTO,
-    uow: UoWDep,
+        response: Response,
+        payload: UserLoginDTO,
+        uow: UoWDep,
 ) -> TokenDTO:
     auth_service = AuthService(uow)
     try:
@@ -68,9 +67,9 @@ async def login(
 
 @router.post('/refresh', response_model=TokenDTO)
 async def refresh(
-    response: Response,
-    uow: UoWDep,
-    refresh_token: str | None = Cookie(default=None, alias=settings.JWT_REFRESH_COOKIE_NAME),
+        response: Response,
+        uow: UoWDep,
+        refresh_token: str | None = Cookie(default=None, alias=settings.JWT_REFRESH_COOKIE_NAME),
 ) -> TokenDTO:
     if refresh_token is None:
         raise invalid_refresh_token_http_exception()
@@ -102,9 +101,9 @@ async def refresh(
 
 @router.post('/logout', status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
-    response: Response,
-    uow: UoWDep,
-    refresh_token: str | None = Cookie(default=None, alias=settings.JWT_REFRESH_COOKIE_NAME),
+        response: Response,
+        uow: UoWDep,
+        refresh_token: str | None = Cookie(default=None, alias=settings.JWT_REFRESH_COOKIE_NAME),
 ) -> None:
     clear_refresh_cookie(response)
 
@@ -124,5 +123,3 @@ async def logout(
 @router.get('/me', response_model=UserDTO)
 async def get_me(current_user: CurrentUser) -> UserDTO:
     return current_user
-
-

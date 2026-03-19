@@ -1,14 +1,16 @@
 import datetime
-from typing import TYPE_CHECKING
 import uuid
+from typing import TYPE_CHECKING
+
+from pydantic import BaseModel, field_validator
 
 from core.enums import Role
-from pydantic import BaseModel, field_validator
 from utils.datetime_utils import validate_utc_timezone, validate_not_future_time
 
 if TYPE_CHECKING:
     from schemas.workspaces import WorkspaceRelListDTO
     from schemas.users import UserDTO
+
 
 class WorkspaceMemberCreateDTO(BaseModel):
     workspace_id: uuid.UUID
@@ -29,6 +31,7 @@ class WorkspaceMemberDTO(WorkspaceMemberCreateDTO):
 
 class WorkspaceMemberRelWorkspaceDTO(WorkspaceMemberDTO):
     workspace: 'WorkspaceRelListDTO | None'
+
 
 class WorkspaceMembersRelUserDTO(WorkspaceMemberDTO):
     user: 'UserDTO | None'

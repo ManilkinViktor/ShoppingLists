@@ -1,7 +1,7 @@
 from core.security import hash_password
+from schemas.users import UserCreateDTO, UserDTO, UserCreateAuthDTO, UserBaseDTO
 from services.base import BaseService
 from services.exceptions import EmailAlreadyExists, ConflictUUID
-from schemas.users import UserCreateDTO, UserDTO, UserCreateAuthDTO, UserBaseDTO
 
 
 class UserService(BaseService):
@@ -26,7 +26,6 @@ class UserService(BaseService):
         self._log_info("User was created", extra={'user_id': user_data.id})
         return user
 
-
     async def change_password(self, user: UserDTO, password: str) -> None:
         hashed_password = await hash_password(password)
         await self.uow.users.update(user.id, hashed_password=hashed_password)
@@ -36,9 +35,3 @@ class UserService(BaseService):
     def _same_users(first_user: UserBaseDTO, second_user: UserBaseDTO) -> bool:
         return (first_user.email == second_user.email
                 and first_user.name == second_user.name)
-
-
-
-
-
-
