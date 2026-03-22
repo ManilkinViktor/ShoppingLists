@@ -10,12 +10,12 @@ class WorkspaceVersionRequestDTO(BaseModel):
 
 class WorkspaceCreateRequestDTO(UUIDMixinDTO):
     name: str = Field(min_length=1, max_length=FieldConstraints.BASE_LEN)
-    description: str | None = Field(max_length=FieldConstraints.BASE_LEN)
+    description: str | None = Field(max_length=FieldConstraints.DESCRIPTION_LEN)
 
 
 class WorkspacePatchRequestDTO(WorkspaceVersionRequestDTO):
     name: str | None = Field(default=None, min_length=1, max_length=FieldConstraints.BASE_LEN)
-    description: str | None = Field(default=None, max_length=FieldConstraints.BASE_LEN)
+    description: str | None = Field(default=None, max_length=FieldConstraints.DESCRIPTION_LEN)
 
 
 class WorkspaceDeleteRequestDTO(WorkspaceVersionRequestDTO):

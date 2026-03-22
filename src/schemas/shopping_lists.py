@@ -14,13 +14,13 @@ if TYPE_CHECKING:
 class ShoppingListCreateDTO(UUIDMixinDTO):
     workspace_id: uuid.UUID
     name: str = Field(min_length=1, max_length=FieldConstraints.BASE_LEN)
-    description: str | None = Field(max_length=FieldConstraints.BASE_LEN)
+    description: str | None = Field(max_length=FieldConstraints.DESCRIPTION_LEN)
     created_by: uuid.UUID | None = None
 
 
 class ShoppingListPatchDTO(UUIDMixinDTO):
     name: str | None = Field(default=None, min_length=1, max_length=FieldConstraints.BASE_LEN)
-    description: str | None = Field(default=None, max_length=FieldConstraints.BASE_LEN)
+    description: str | None = Field(default=None, max_length=FieldConstraints.DESCRIPTION_LEN)
 
 
 class ShoppingListDTO(ShoppingListCreateDTO, TimeStampMixinDTO):
