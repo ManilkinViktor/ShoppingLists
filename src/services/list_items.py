@@ -44,6 +44,7 @@ class ListItemsService(BaseService):
             self._log_warning(
                 "User doesn't have access to list item",
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
+                immediate=True,
             )
             raise EntityNotFound(entity_type)
 
@@ -54,6 +55,7 @@ class ListItemsService(BaseService):
             self._log_warning(
                 "User doesn't have access to list item",
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
+                immediate=True,
             )
             raise EntityNotFound(ListItemDTO)
 
@@ -65,6 +67,7 @@ class ListItemsService(BaseService):
             self._log_warning(
                 "User doesn't have access to list item",
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
+                immediate=True,
             )
             raise EntityNotFound(ListItemDTO)
 
@@ -74,7 +77,7 @@ class ListItemsService(BaseService):
             return cached_workspace_id
         parent_list: ShoppingListDTO | None = await self.uow.shopping_lists.get(list_id)
         if not parent_list:
-            self._log_warning("Shopping list not found", extra={'list_id': list_id})
+            self._log_warning("Shopping list not found", extra={'list_id': list_id}, immediate=True)
             raise EntityNotFound(ShoppingListDTO)
         self._workspace_id_by_list_id[list_id] = parent_list.workspace_id
         return parent_list.workspace_id
@@ -110,7 +113,8 @@ class ListItemsService(BaseService):
         for item_data in prepared_items:
             previous_item = request_items_by_id.get(item_data.id)
             if previous_item is not None and previous_item != item_data:
-                self._log_warning("Conflict uuid: list item with same uuid and another data exists")
+                self._log_warning("Conflict uuid: list item with same uuid and another data exists",
+                                  immediate=True)
                 raise ConflictUUID
             request_items_by_id[item_data.id] = item_data
 
@@ -119,7 +123,8 @@ class ListItemsService(BaseService):
                 has_creates = True
                 continue
             if not self._same_items(found_item, item_data):
-                self._log_warning("Conflict uuid: list item with same uuid and another data exists")
+                self._log_warning("Conflict uuid: list item with same uuid and another data exists",
+                                  immediate=True)
                 raise ConflictUUID
 
         return workspace_id, prepared_items, existing_items_by_id, has_creates
@@ -241,7 +246,7 @@ class ListItemsService(BaseService):
         for item_data in prepared_items:
             current_item = current_items_by_id.get(item_data.id)
             if not current_item or current_item.list_id != list_id:
-                self._log_warning("List item not found", extra={'item_id': item_data.id})
+                self._log_warning("List item not found", extra={'item_id': item_data.id}, immediate=True)
                 raise EntityNotFound(ListItemDTO)
 
         has_changes = any(
@@ -282,12 +287,13 @@ class ListItemsService(BaseService):
 
         updated_rows = await self.uow.list_items.update_many(update_data_by_id)
         if updated_rows != len(update_data_by_id):
-            self._log_warning("Some list items were not updated", extra={'list_id': list_id})
+            self._log_warning("Some list items were not updated", extra={'list_id': list_id}, immediate=True)
             raise EntityNotFound(ListItemDTO)
 
         updated_items_by_id = await self._get_items_by_ids(list(update_data_by_id))
         if len(updated_items_by_id) != len(update_data_by_id):
-            self._log_warning("Some list items were not loaded after update", extra={'list_id': list_id})
+            self._log_warning("Some list items were not loaded after update", extra={'list_id': list_id},
+                              immediate=True)
             raise EntityNotFound(ListItemDTO)
 
         updated_items: list[ListItemDTO] = []
@@ -299,7 +305,7 @@ class ListItemsService(BaseService):
                 continue
             updated_item = updated_items_by_id.get(item_data.id)
             if updated_item is None:
-                self._log_warning("List item not found", extra={'item_id': item_data.id})
+                self._log_warning("List item not found", extra={'item_id': item_data.id}, immediate=True)
                 raise EntityNotFound(ListItemDTO)
             current_items_by_id[item_data.id] = updated_item
             self._log_info("List item was updated", extra={'item_id': updated_item.id})
@@ -342,7 +348,7 @@ class ListItemsService(BaseService):
         for item_id in ids:
             item = current_items_by_id.get(item_id)
             if not item or item.list_id != list_id:
-                self._log_warning("List item not found", extra={'item_id': item_id})
+                self._log_warning("List item not found", extra={'item_id': item_id}, immediate=True)
                 raise EntityNotFound(ListItemDTO)
 
         new_version: int | None = None
@@ -354,7 +360,7 @@ class ListItemsService(BaseService):
 
         deleted_rows = await self.uow.list_items.delete_many(ids)
         if deleted_rows != len(ids):
-            self._log_warning("Some list items were not deleted", extra={'list_id': list_id})
+            self._log_warning("Some list items were not deleted", extra={'list_id': list_id}, immediate=True)
             raise EntityNotFound(ListItemDTO)
 
         for item_id in ids:
@@ -393,7 +399,7 @@ class ListItemsService(BaseService):
     ) -> ListItemDTO:
         item = await self.uow.list_items.get(item_id)
         if not item or item.list_id != list_id:
-            self._log_warning("List item not found", extra={'item_id': item_id})
+            self._log_warning("List item not found", extra={'item_id': item_id}, immediate=True)
             raise EntityNotFound(ListItemDTO)
         workspace_id = await self._get_workspace_id_for_list(item.list_id)
         await self._ensure_member_access(current_user, workspace_id, ListItemDTO)

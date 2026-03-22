@@ -16,20 +16,21 @@ class BaseService(metaclass=LoggerMeta):
 
     # methods for logging after commit
 
-    def _log_debug(self, msg: str, *args, **kwargs) -> None:
-        self.uow.log(self.logger, DEBUG, msg, *args, **kwargs)
+    def _log_debug(self, msg: str, *args, immediate: bool = False, **kwargs) -> None:
+        self.uow.log(self.logger, DEBUG, msg, *args, immediate=immediate, **kwargs)
 
-    def _log_info(self, msg: str, *args, **kwargs) -> None:
-        self.uow.log(self.logger, INFO, msg, *args, **kwargs)
+    def _log_info(self, msg: str, *args, immediate: bool = False, **kwargs) -> None:
+        self.uow.log(self.logger, INFO, msg, *args, immediate=immediate, **kwargs)
 
-    def _log_warning(self, msg: str, *args, **kwargs) -> None:
-        self.uow.log(self.logger, WARNING, msg, *args, **kwargs)
+    def _log_warning(self, msg: str, *args, immediate: bool = False, **kwargs) -> None:
+        self.uow.log(self.logger, WARNING, msg, *args, immediate=immediate, **kwargs)
 
     def _log_error(self, msg: str, *args, **kwargs) -> None:
-        self.uow.log(self.logger, ERROR, msg, *args, **kwargs)
+        # Для error и выше всегда immediate
+        self.uow.log(self.logger, ERROR, msg, *args, immediate=True, **kwargs)
 
     def _log_critical(self, msg: str, *args, **kwargs) -> None:
-        self.uow.log(self.logger, CRITICAL, msg, *args, **kwargs)
+        self.uow.log(self.logger, CRITICAL, msg, *args, immediate=True, **kwargs)
 
     async def _bump_workspace_version_or_raise(
             self,
@@ -47,6 +48,7 @@ class BaseService(metaclass=LoggerMeta):
         self._log_warning(
             'Workspace version mismatch',
             extra={'workspace_id': workspace_id, 'workspace_version': workspace_version},
+            immediate=True,
         )
         raise WorkspaceVersionMismatch
 

@@ -31,6 +31,7 @@ class WorkspaceInviteService(BaseService):
             self._log_warning(
                 "User is not the owner of workspace",
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
+                immediate=True,
             )
             raise EntityNotFound(WorkspaceDTO)
 
@@ -70,10 +71,12 @@ class WorkspaceInviteService(BaseService):
         )
 
     async def _validate_invite(self, invite: WorkspaceInviteDTO) -> None:
+
         if not invite.is_active:
             self._log_warning(
                 "Invitation is inactive",
                 extra={'code': invite.id, 'workspace_id': invite.workspace_id},
+                immediate=True,
             )
             raise DomainException("Invitation is no longer active")
 
@@ -82,6 +85,7 @@ class WorkspaceInviteService(BaseService):
             self._log_warning(
                 "Invitation has expired",
                 extra={'code': invite.id, 'workspace_id': invite.workspace_id},
+                immediate=True,
             )
             raise DomainException("Invitation has expired")
 
@@ -89,6 +93,7 @@ class WorkspaceInviteService(BaseService):
             self._log_warning(
                 "Invitation max uses exceeded",
                 extra={'code': invite.id, 'workspace_id': invite.workspace_id},
+                immediate=True,
             )
             raise DomainException("Invitation has reached maximum uses")
 
@@ -101,6 +106,7 @@ class WorkspaceInviteService(BaseService):
             self._log_info(
                 "User is already a member of workspace",
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
+                immediate=True,
             )
             raise DomainException("You are already a member of this workspace")
 
@@ -131,6 +137,7 @@ class WorkspaceInviteService(BaseService):
             self._log_warning(
                 "Invalid invitation code",
                 extra={'code': code, 'user_id': current_user},
+                immediate=True,
             )
             raise EntityNotFound(WorkspaceDTO)
 
@@ -153,6 +160,7 @@ class WorkspaceInviteService(BaseService):
             self._log_warning(
                 "Invalid invitation code",
                 extra={'code': code},
+                immediate=True,
             )
             raise EntityNotFound(WorkspaceDTO)
 

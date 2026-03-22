@@ -44,6 +44,7 @@ class ShoppingListsService(BaseService):
             self._log_warning(
                 "User doesn't have access to shopping list",
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
+                immediate=True
             )
             raise EntityNotFound(entity_type)
 
@@ -54,6 +55,7 @@ class ShoppingListsService(BaseService):
             self._log_warning(
                 "User doesn't have access to shopping list",
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
+                immediate=True,
             )
             raise EntityNotFound(ShoppingListDTO)
 
@@ -65,6 +67,7 @@ class ShoppingListsService(BaseService):
             self._log_warning(
                 "User doesn't have access to shopping list",
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
+                immediate=True,
             )
             raise EntityNotFound(ShoppingListDTO)
 
@@ -74,7 +77,7 @@ class ShoppingListsService(BaseService):
             return cached_workspace_id
         stored_list: ShoppingListDTO | None = await self.uow.shopping_lists.get(list_id)
         if not stored_list:
-            self._log_warning("Shopping list not found", extra={'list_id': list_id})
+            self._log_warning("Shopping list not found", extra={'list_id': list_id}, immediate=True)
             raise EntityNotFound(ShoppingListDTO)
         self._workspace_id_by_list_id[list_id] = stored_list.workspace_id
         return stored_list.workspace_id
@@ -101,7 +104,8 @@ class ShoppingListsService(BaseService):
             if self._same_lists(found_list, create_data):
                 self._log_info("Shopping list already exists", extra={'list_id': found_list.id})
                 return None if deferred else found_list
-            self._log_warning("Conflict uuid: shopping list with same uuid and another data exists")
+            self._log_warning("Conflict uuid: shopping list with same uuid and another data exists",
+                              immediate=True)
             raise ConflictUUID
 
         if deferred:
@@ -205,7 +209,7 @@ class ShoppingListsService(BaseService):
 
         current_list = await self.uow.shopping_lists.get(patch_data.id)
         if current_list is None:
-            self._log_warning("Shopping list not found", extra={'list_id': patch_data.id})
+            self._log_warning("Shopping list not found", extra={'list_id': patch_data.id}, immediate=True)
             raise EntityNotFound(ShoppingListDTO)
 
         if not patch_fields:
@@ -223,7 +227,7 @@ class ShoppingListsService(BaseService):
             **patch_fields,
         )
         if not updated:
-            self._log_warning("Shopping list not found", extra={'list_id': patch_data.id})
+            self._log_warning("Shopping list not found", extra={'list_id': patch_data.id}, immediate=True)
             raise EntityNotFound(ShoppingListDTO)
 
         if record_change and new_version is not None:
@@ -262,7 +266,7 @@ class ShoppingListsService(BaseService):
 
         deleted = await self.uow.shopping_lists.delete(list_id)
         if not deleted:
-            self._log_warning("Shopping list not found", extra={'list_id': list_id})
+            self._log_warning("Shopping list not found", extra={'list_id': list_id}, immediate=True)
             raise EntityNotFound(ShoppingListDTO)
 
         if record_change and new_version is not None:
@@ -299,7 +303,7 @@ class ShoppingListsService(BaseService):
     ) -> ShoppingListRelItemDTO:
         shopping_list = await self.uow.shopping_lists.get_list_with_items(list_id)
         if not shopping_list:
-            self._log_warning("Shopping list not found", extra={'list_id': list_id})
+            self._log_warning("Shopping list not found", extra={'list_id': list_id}, immediate=True)
             raise EntityNotFound(ShoppingListDTO)
         await self._ensure_member_access(
             current_user,

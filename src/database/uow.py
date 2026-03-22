@@ -50,13 +50,17 @@ class UnitOfWork:
         else:
             self._session.info.pop('defer_flush', None)
 
-    def log(self, logger_obj: Logger, level: int, msg: str, *args, **kwargs) -> None:
-        self._aggregator_logs.append((logger_obj, {
-            'level': level,
-            'msg': msg,
-            'args': args,
-            'kwargs': kwargs,
-        }))
+    def log(self, logger_obj: Logger, level: int, msg: str, *args, immediate: bool = False, **kwargs) -> None:
+        # Для ERROR/CRITICAL или immediate=True — лог сразу
+        if immediate or level >= 40:  # 40 = logging.ERROR
+            logger_obj.log(level, msg, *args, **kwargs)
+        else:
+            self._aggregator_logs.append((logger_obj, {
+                'level': level,
+                'msg': msg,
+                'args': args,
+                'kwargs': kwargs,
+            }))
 
     async def _flush_logs(self) -> None:
         for logger_obj, entry in self._aggregator_logs:

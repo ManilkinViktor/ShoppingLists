@@ -31,6 +31,7 @@ class WorkspacesService(BaseService):
             self._log_warning(
                 "User doesn't have access to workspace",
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
+                immediate=True,
             )
             raise EntityNotFound(WorkspaceDTO)
 
@@ -41,6 +42,7 @@ class WorkspacesService(BaseService):
             self._log_warning(
                 "User doesn't have access to workspace",
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
+                immediate=True,
             )
             raise EntityNotFound(WorkspaceDTO)
 
@@ -52,6 +54,7 @@ class WorkspacesService(BaseService):
             self._log_warning(
                 "User doesn't have access to workspace",
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
+                immediate=True,
             )
             raise EntityNotFound(WorkspaceDTO)
 
@@ -68,7 +71,7 @@ class WorkspacesService(BaseService):
             if self._same_workspaces(found_workspace, workspace_data):
                 self._log_info("Workspace already exists", extra={'workspace_id': found_workspace.id})
                 return None if deferred else found_workspace
-            self._log_warning("Conflict uuid: workspace with same uuid and another data exists")
+            self._log_warning("Conflict uuid: workspace with same uuid and another data exists", immediate=True)
             raise ConflictUUID
 
         membership = WorkspaceMemberCreateDTO(
@@ -144,7 +147,7 @@ class WorkspacesService(BaseService):
 
         current_workspace = await self.uow.workspaces.get(patch_data.id)
         if current_workspace is None:
-            self._log_warning("Workspace not found", extra={'workspace_id': patch_data.id})
+            self._log_warning("Workspace not found", extra={'workspace_id': patch_data.id}, immediate=True)
             raise EntityNotFound(WorkspaceDTO)
 
         if not patch_fields:
@@ -159,7 +162,7 @@ class WorkspacesService(BaseService):
 
         updated: WorkspaceDTO | None = await self.uow.workspaces.update(patch_data.id, **patch_fields)
         if not updated:
-            self._log_warning("Workspace not found", extra={'workspace_id': patch_data.id})
+            self._log_warning("Workspace not found", extra={'workspace_id': patch_data.id}, immediate=True)
             raise EntityNotFound(WorkspaceDTO)
 
         if record_change and new_version is not None:
@@ -196,7 +199,7 @@ class WorkspacesService(BaseService):
 
         deleted = await self.uow.workspaces.delete(workspace_id)
         if not deleted:
-            self._log_warning("Workspace not found", extra={'workspace_id': workspace_id})
+            self._log_warning("Workspace not found", extra={'workspace_id': workspace_id}, immediate=True)
             raise EntityNotFound(WorkspaceDTO)
 
         if record_change and new_version is not None:
@@ -225,6 +228,6 @@ class WorkspacesService(BaseService):
         await self._ensure_member_access(current_user, workspace_id)
         workspace = await self.uow.workspaces.get_workspace_with_lists(workspace_id)
         if not workspace:
-            self._log_warning("Workspace not found", extra={'workspace_id': workspace_id})
+            self._log_warning("Workspace not found", extra={'workspace_id': workspace_id}, immediate=True)
             raise EntityNotFound(WorkspaceDTO)
         return workspace

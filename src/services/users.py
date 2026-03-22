@@ -13,9 +13,9 @@ class UserService(BaseService):
                 if self._same_users(found_user, user_data):
                     return found_user
                 else:
-                    self._log_info("Conflict uuid")
+                    self._log_info("Conflict uuid", immediate=True)
                     raise ConflictUUID
-            self._log_info("User wasn't created: email already exists", extra={'user_id': user_data.id})
+            self._log_info("User wasn't created: email already exists", extra={'user_id': user_data.id}, immediate=True)
             raise EmailAlreadyExists
         hashed_password: str = await hash_password(user_data.password)
         user_auth_data: UserCreateAuthDTO = UserCreateAuthDTO(
