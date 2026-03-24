@@ -16,7 +16,6 @@ class WorkspaceMembersService(BaseService):
             self._log_warning(
                 "User is not the owner of workspace",
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
-                immediate=True,
             )
             raise EntityNotFound(WorkspaceDTO)
 
@@ -29,7 +28,6 @@ class WorkspaceMembersService(BaseService):
             self._log_warning(
                 "Member not found",
                 extra={'workspace_id': workspace_id, 'user_id': user_id},
-                immediate=True,
             )
             raise EntityNotFound(WorkspaceMemberDTO)
         return member
@@ -93,7 +91,6 @@ class WorkspaceMembersService(BaseService):
             self._log_warning(
                 "User is not a member of workspace",
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
-                immediate=True,
             )
             raise EntityNotFound(WorkspaceDTO)
 

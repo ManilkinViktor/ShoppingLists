@@ -113,8 +113,7 @@ class ListItemsService(BaseService):
         for item_data in prepared_items:
             previous_item = request_items_by_id.get(item_data.id)
             if previous_item is not None and previous_item != item_data:
-                self._log_warning("Conflict uuid: list item with same uuid and another data exists",
-                                  immediate=True)
+                self._log_warning("Conflict uuid: list item with same uuid and another data exists", immediate=True)
                 raise ConflictUUID
             request_items_by_id[item_data.id] = item_data
 
@@ -123,8 +122,7 @@ class ListItemsService(BaseService):
                 has_creates = True
                 continue
             if not self._same_items(found_item, item_data):
-                self._log_warning("Conflict uuid: list item with same uuid and another data exists",
-                                  immediate=True)
+                self._log_warning("Conflict uuid: list item with same uuid and another data exists", immediate=True)
                 raise ConflictUUID
 
         return workspace_id, prepared_items, existing_items_by_id, has_creates
@@ -292,8 +290,7 @@ class ListItemsService(BaseService):
 
         updated_items_by_id = await self._get_items_by_ids(list(update_data_by_id))
         if len(updated_items_by_id) != len(update_data_by_id):
-            self._log_warning("Some list items were not loaded after update", extra={'list_id': list_id},
-                              immediate=True)
+            self._log_warning("Some list items were not loaded after update", extra={'list_id': list_id}, immediate=True)
             raise EntityNotFound(ListItemDTO)
 
         updated_items: list[ListItemDTO] = []
@@ -348,7 +345,7 @@ class ListItemsService(BaseService):
         for item_id in ids:
             item = current_items_by_id.get(item_id)
             if not item or item.list_id != list_id:
-                self._log_warning("List item not found", extra={'item_id': item_id}, immediate=True)
+                self._log_warning("List item not found", extra={'item_id': item_id})
                 raise EntityNotFound(ListItemDTO)
 
         new_version: int | None = None

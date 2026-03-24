@@ -244,7 +244,6 @@ class WorkspaceSyncService(BaseService):
             self._log_warning(
                 "User doesn't have access to workspace sync",
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
-                immediate=True
             )
             raise EntityNotFound(WorkspaceDTO)
         request_versions: dict[UUID, int] = {
