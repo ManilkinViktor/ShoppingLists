@@ -54,7 +54,7 @@ class LoggerMeta(ABCMeta):
     def __new__(mcs, name: str, bases: tuple, namespace: dict[str, Any], **kwargs: Any) -> type:
         logger_name = f"{namespace.get('__module__')}.{name}"
         logger = logging.getLogger(logger_name)
-
+        logger.propagate = False
         if not any(isinstance(h, QueueHandler) for h in logger.handlers):
             handler = get_queue_handler()
             logger.addHandler(handler)
