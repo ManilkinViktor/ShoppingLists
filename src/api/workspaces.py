@@ -29,7 +29,12 @@ from services.workspaces import WorkspacesService
 router = APIRouter(prefix='/workspaces', tags=['workspaces'])
 
 
-@router.get('', response_model=list[WorkspaceDTO])
+@router.get(
+    '',
+    response_model=list[WorkspaceDTO],
+    summary='List accessible workspaces',
+    description='Returns all workspaces available to the current user.',
+)
 async def list_workspaces(
         current_user: CurrentUser,
         uow: UoWDep,
@@ -43,7 +48,12 @@ async def list_workspaces(
         raise integrity_error_to_http_exception(error) from None
 
 
-@router.get('/full', response_model=list[WorkspaceRelListDTO])
+@router.get(
+    '/full',
+    response_model=list[WorkspaceRelListDTO],
+    summary='List workspaces with shopping lists',
+    description='Returns accessible workspaces together with nested shopping lists and items.',
+)
 async def list_workspaces_with_lists(
         current_user: CurrentUser,
         uow: UoWDep,
@@ -57,7 +67,12 @@ async def list_workspaces_with_lists(
         raise integrity_error_to_http_exception(error) from None
 
 
-@router.get('/{workspace_id}', response_model=WorkspaceRelListDTO)
+@router.get(
+    '/{workspace_id}',
+    response_model=WorkspaceRelListDTO,
+    summary='Get workspace details',
+    description='Returns a single workspace with its shopping lists and list items.',
+)
 async def get_workspace(
         workspace_id: uuid.UUID,
         current_user: CurrentUser,
@@ -72,7 +87,13 @@ async def get_workspace(
         raise integrity_error_to_http_exception(error) from None
 
 
-@router.post('', response_model=WorkspaceDTO, status_code=status.HTTP_201_CREATED)
+@router.post(
+    '',
+    response_model=WorkspaceDTO,
+    status_code=status.HTTP_201_CREATED,
+    summary='Create workspace',
+    description='Creates a new workspace for the current user and records the change for sync.',
+)
 async def create_workspace(
         payload: WorkspaceCreateRequestDTO,
         current_user: CurrentUser,
@@ -98,7 +119,12 @@ async def create_workspace(
     return workspace
 
 
-@router.patch('/{workspace_id}', response_model=WorkspaceDTO)
+@router.patch(
+    '/{workspace_id}',
+    response_model=WorkspaceDTO,
+    summary='Update workspace',
+    description='Updates workspace fields.',
+)
 async def patch_workspace(
         workspace_id: uuid.UUID,
         payload: WorkspacePatchRequestDTO,
@@ -123,7 +149,12 @@ async def patch_workspace(
     return workspace
 
 
-@router.delete('/{workspace_id}', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    '/{workspace_id}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary='Delete workspace',
+    description='Soft-deletes a workspace.',
+)
 async def delete_workspace(
         workspace_id: uuid.UUID,
         payload: WorkspaceDeleteRequestDTO,
@@ -145,7 +176,13 @@ async def delete_workspace(
         raise integrity_error_to_http_exception(error) from None
 
 
-@router.post('/sync/pull', response_model=list[WorkspaceChangeCreateDTO], status_code=status.HTTP_200_OK)
+@router.post(
+    '/sync/pull',
+    response_model=list[WorkspaceChangeCreateDTO],
+    status_code=status.HTTP_200_OK,
+    summary='Pull workspace changes',
+    description='Returns workspace changes newer than the versions known by the client.',
+)
 async def pull_workspace_changes(
         versions: list[WorkspaceVersionDTO],
         current_user: CurrentUser,
@@ -161,7 +198,13 @@ async def pull_workspace_changes(
     return changes
 
 
-@router.post('/sync/push', response_model=list[WorkspacePushResultDTO], status_code=status.HTTP_200_OK)
+@router.post(
+    '/sync/push',
+    response_model=list[WorkspacePushResultDTO],
+    status_code=status.HTTP_200_OK,
+    summary='Push workspace changes',
+    description='Applies a client sync payload and returns per-workspace push results.',
+)
 async def push_workspace_changes(
         changes: list[WorkspaceChangeCreateDTO],
         current_user: CurrentUser,
@@ -178,7 +221,13 @@ async def push_workspace_changes(
     return result
 
 
-@router.post('/{workspace_id}/invites', response_model=InviteCodeResponseDTO, status_code=status.HTTP_201_CREATED)
+@router.post(
+    '/{workspace_id}/invites',
+    response_model=InviteCodeResponseDTO,
+    status_code=status.HTTP_201_CREATED,
+    summary='Create invite code',
+    description='Generates a join code for a workspace with the requested role and invite limits.',
+)
 async def create_workspace_invite(
         workspace_id: uuid.UUID,
         payload: CreateInviteRequestDTO,
@@ -200,7 +249,13 @@ async def create_workspace_invite(
         raise integrity_error_to_http_exception(error) from None
 
 
-@router.post('/join-by-invite', response_model=WorkspaceDTO, status_code=status.HTTP_200_OK)
+@router.post(
+    '/join-by-invite',
+    response_model=WorkspaceDTO,
+    status_code=status.HTTP_200_OK,
+    summary='Join workspace by invite code',
+    description='Adds the current user to a workspace using an active invite code.',
+)
 async def join_workspace_by_invite(
         payload: JoinByInviteRequestDTO,
         current_user: CurrentUser,
@@ -215,7 +270,12 @@ async def join_workspace_by_invite(
         raise integrity_error_to_http_exception(error) from None
 
 
-@router.get('/{workspace_id}/members', response_model=list[WorkspaceMemberDTO])
+@router.get(
+    '/{workspace_id}/members',
+    response_model=list[WorkspaceMemberDTO],
+    summary='List workspace members',
+    description='Returns all members of the workspace visible to the current user.',
+)
 async def list_workspace_members(
         workspace_id: uuid.UUID,
         current_user: CurrentUser,
@@ -230,7 +290,12 @@ async def list_workspace_members(
         raise integrity_error_to_http_exception(error) from None
 
 
-@router.patch('/{workspace_id}/members/{user_id}', response_model=WorkspaceMemberDTO)
+@router.patch(
+    '/{workspace_id}/members/{user_id}',
+    response_model=WorkspaceMemberDTO,
+    summary='Update member role',
+    description='Changes the role of a workspace member. Restricted to the workspace owner.',
+)
 async def update_member_role(
         workspace_id: uuid.UUID,
         user_id: uuid.UUID,
@@ -252,7 +317,12 @@ async def update_member_role(
         raise integrity_error_to_http_exception(error) from None
 
 
-@router.delete('/{workspace_id}/members/{user_id}', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    '/{workspace_id}/members/{user_id}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary='Remove workspace member',
+    description='Removes a user from the workspace. Restricted to the workspace owner.',
+)
 async def remove_member(
         workspace_id: uuid.UUID,
         user_id: uuid.UUID,

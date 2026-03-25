@@ -36,7 +36,12 @@ from services.shopping_lists import ShoppingListsService
 router = APIRouter(prefix='/shopping-lists', tags=['shopping-lists'])
 
 
-@router.get('', response_model=list[ShoppingListDTO])
+@router.get(
+    '',
+    response_model=list[ShoppingListDTO],
+    summary='List shopping lists',
+    description='Returns shopping lists available to the current user, optionally filtered by workspace.',
+)
 async def list_shopping_lists(
         current_user: CurrentUser,
         uow: UoWDep,
@@ -54,7 +59,12 @@ async def list_shopping_lists(
         raise integrity_error_to_http_exception(error) from None
 
 
-@router.get('/{list_id}', response_model=ShoppingListRelItemDTO)
+@router.get(
+    '/{list_id}',
+    response_model=ShoppingListRelItemDTO,
+    summary='Get shopping list details',
+    description='Returns one shopping list together with all of its items.',
+)
 async def get_shopping_list(
         list_id: uuid.UUID,
         current_user: CurrentUser,
@@ -69,7 +79,12 @@ async def get_shopping_list(
         raise integrity_error_to_http_exception(error) from None
 
 
-@router.get('/{list_id}/items', response_model=list[ListItemDTO])
+@router.get(
+    '/{list_id}/items',
+    response_model=list[ListItemDTO],
+    summary='List items in shopping list',
+    description='Returns all items from the specified shopping list.',
+)
 async def get_list_items(
         list_id: uuid.UUID,
         current_user: CurrentUser,
@@ -84,7 +99,12 @@ async def get_list_items(
         raise integrity_error_to_http_exception(error) from None
 
 
-@router.get('/{list_id}/items/{item_id}', response_model=ListItemDTO)
+@router.get(
+    '/{list_id}/items/{item_id}',
+    response_model=ListItemDTO,
+    summary='Get shopping list item',
+    description='Returns a single item from the specified shopping list.',
+)
 async def get_list_item(
         list_id: uuid.UUID,
         item_id: uuid.UUID,
@@ -100,7 +120,13 @@ async def get_list_item(
         raise integrity_error_to_http_exception(error) from None
 
 
-@router.post('', response_model=ShoppingListDTO, status_code=status.HTTP_201_CREATED)
+@router.post(
+    '',
+    response_model=ShoppingListDTO,
+    status_code=status.HTTP_201_CREATED,
+    summary='Create shopping list',
+    description='Creates a shopping list and optionally creates its initial items in the same request.',
+)
 async def create_shopping_list(
         payload: ShoppingListCreateWithItemsDTO,
         current_user: CurrentUser,
@@ -130,7 +156,12 @@ async def create_shopping_list(
     return created_list
 
 
-@router.patch('/{list_id}', response_model=ShoppingListDTO)
+@router.patch(
+    '/{list_id}',
+    response_model=ShoppingListDTO,
+    summary='Update shopping list',
+    description='Updates shopping list fields.',
+)
 async def patch_shopping_list(
         list_id: uuid.UUID,
         payload: ShoppingListPatchRequestDTO,
@@ -155,7 +186,12 @@ async def patch_shopping_list(
     return updated_list
 
 
-@router.delete('/{list_id}', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    '/{list_id}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary='Delete shopping list',
+    description='Soft-deletes a shopping list.',
+)
 async def delete_shopping_list(
         list_id: uuid.UUID,
         payload: ShoppingListDeleteRequestDTO,
@@ -177,7 +213,13 @@ async def delete_shopping_list(
         raise integrity_error_to_http_exception(error) from None
 
 
-@router.post('/{list_id}/items', response_model=list[ListItemDTO], status_code=status.HTTP_201_CREATED)
+@router.post(
+    '/{list_id}/items',
+    response_model=list[ListItemDTO],
+    status_code=status.HTTP_201_CREATED,
+    summary='Create shopping list items',
+    description='Creates one or more items in the specified shopping list.',
+)
 async def create_list_items(
         list_id: uuid.UUID,
         payload: ListItemsCreateRequestDTO,
@@ -207,7 +249,12 @@ async def create_list_items(
     return created_items
 
 
-@router.patch('/{list_id}/items', response_model=list[ListItemDTO])
+@router.patch(
+    '/{list_id}/items',
+    response_model=list[ListItemDTO],
+    summary='Update shopping list items',
+    description='Updates one or more items in the specified shopping list.',
+)
 async def patch_list_items(
         list_id: uuid.UUID,
         payload: ListItemsPatchRequestDTO,
@@ -234,7 +281,12 @@ async def patch_list_items(
     return updated_items
 
 
-@router.delete('/{list_id}/items', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    '/{list_id}/items',
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary='Delete shopping list items',
+    description='Soft-deletes one or more items from the specified shopping list.',
+)
 async def delete_list_items(
         list_id: uuid.UUID,
         payload: ListItemsDeleteRequestDTO,

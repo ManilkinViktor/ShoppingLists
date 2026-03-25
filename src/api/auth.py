@@ -21,7 +21,13 @@ from services.users import UserService
 router = APIRouter(prefix='/auth', tags=['auth'])
 
 
-@router.post('/register', response_model=TokenDTO, status_code=status.HTTP_201_CREATED)
+@router.post(
+    '/register',
+    response_model=TokenDTO,
+    status_code=status.HTTP_201_CREATED,
+    summary='Register a new user',
+    description='Creates a user account, issues an access token, and sets a refresh token cookie.',
+)
 async def register(
         response: Response,
         payload: UserRegisterDTO,
@@ -44,7 +50,12 @@ async def register(
     return build_access_token_response(user)
 
 
-@router.post('/login', response_model=TokenDTO)
+@router.post(
+    '/login',
+    response_model=TokenDTO,
+    summary='Log in with email and password',
+    description='Authenticates a user, returns an access token, and sets a refresh token cookie.',
+)
 async def login(
         response: Response,
         payload: UserLoginDTO,
@@ -65,7 +76,12 @@ async def login(
     return build_access_token_response(user)
 
 
-@router.post('/refresh', response_model=TokenDTO)
+@router.post(
+    '/refresh',
+    response_model=TokenDTO,
+    summary='Refresh access token',
+    description='Uses the refresh token cookie to rotate the refresh session and issue a new access token.',
+)
 async def refresh(
         response: Response,
         uow: UoWDep,
@@ -99,7 +115,12 @@ async def refresh(
     return build_access_token_response(user)
 
 
-@router.post('/logout', status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    '/logout',
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary='Log out current session',
+    description='Clears the refresh token cookie and revokes the current refresh session when possible.',
+)
 async def logout(
         response: Response,
         uow: UoWDep,
@@ -120,6 +141,11 @@ async def logout(
         await uow.commit()
 
 
-@router.get('/me', response_model=UserDTO)
+@router.get(
+    '/me',
+    response_model=UserDTO,
+    summary='Get current user profile',
+    description='Returns the authenticated user resolved from the bearer access token.',
+)
 async def get_me(current_user: CurrentUser) -> UserDTO:
     return current_user
