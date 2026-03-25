@@ -28,7 +28,7 @@
 
 1. Установите зависимости:
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements-dev.txt
    ```
 
 2. Настройте переменные окружения через файл `.env` (используйте `.env.example` как образец).
@@ -40,8 +40,30 @@
 
 4. Запустите приложение:
    ```bash
-   python src/main.py
+   python3 src/main.py
    ```
+
+### Запуск через Docker Compose
+
+1. Создайте `.env` на основе `.env.example`.
+
+2. Убедитесь, что для локального Docker-запуска в `.env` заданы значения JWT, параметры PostgreSQL и внешний порт приложения `APP_PORT`.
+
+3. Поднимите сервисы:
+   ```bash
+   docker compose up --build
+   ```
+
+После запуска будут доступны:
+
+- API: `http://localhost:${APP_PORT}`
+- pgAdmin: `http://localhost:${PGADMIN_PORT}`
+
+Контейнер приложения автоматически:
+
+- собирает Python-окружение из `requirements.txt`
+- применяет миграции `alembic upgrade head`
+- запускает `python3 src/main.py`
 
 ## Структура проекта
 
@@ -53,4 +75,5 @@
   - `services/` — бизнес-логика приложения
   - `utils/` — вспомогательные утилиты
 - `tests/` — модульные и интеграционные тесты
-- `requirements.txt` — зависимости
+- `requirements.txt` — runtime-зависимости приложения
+- `requirements-dev.txt` — зависимости для разработки и тестов
