@@ -1,10 +1,8 @@
 import uuid
 
 from fastapi import APIRouter, status
-from sqlalchemy.exc import IntegrityError
 
 from api.dependencies import CurrentUser, UoWDep
-from api.http_exceptions import domain_to_http_exception, integrity_error_to_http_exception
 from api.schemas.workspace_invites import CreateInviteRequestDTO, JoinByInviteRequestDTO
 from api.schemas.workspace_members import UpdateMemberRoleRequestDTO
 from api.schemas.workspaces import (
@@ -20,7 +18,6 @@ from schemas.workspace_changes import (
 from schemas.workspace_invites import InviteCodeResponseDTO
 from schemas.workspace_members import WorkspaceMemberDTO
 from schemas.workspaces import WorkspaceCreateDTO, WorkspacePatchDTO, WorkspaceDTO, WorkspaceRelListDTO
-from services.exceptions import DomainException
 from services.workspace_invites import WorkspaceInviteService
 from services.workspace_members import WorkspaceMembersService
 from services.workspace_sync import WorkspaceSyncService
@@ -40,12 +37,7 @@ async def list_workspaces(
         uow: UoWDep,
 ) -> list[WorkspaceDTO]:
     workspaces_service = WorkspacesService(uow)
-    try:
-        return await workspaces_service.list_for_user(current_user.id)
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    return await workspaces_service.list_for_user(current_user.id)
 
 
 @router.get(
@@ -59,12 +51,7 @@ async def list_workspaces_with_lists(
         uow: UoWDep,
 ) -> list[WorkspaceRelListDTO]:
     workspaces_service = WorkspacesService(uow)
-    try:
-        return await workspaces_service.list_with_lists_for_user(current_user.id)
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    return await workspaces_service.list_with_lists_for_user(current_user.id)
 
 
 @router.get(
@@ -79,12 +66,7 @@ async def get_workspace(
         uow: UoWDep,
 ) -> WorkspaceRelListDTO:
     workspaces_service = WorkspacesService(uow)
-    try:
-        return await workspaces_service.get_with_lists(workspace_id, current_user.id)
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    return await workspaces_service.get_with_lists(workspace_id, current_user.id)
 
 
 @router.post(
@@ -105,17 +87,12 @@ async def create_workspace(
         name=payload.name,
         description=payload.description,
     )
-    try:
-        workspace = await workspaces_service.create(
-            workspace_data,
-            current_user.id,
-            record_change=True,
-        )
-        await uow.commit()
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    workspace = await workspaces_service.create(
+        workspace_data,
+        current_user.id,
+        record_change=True,
+    )
+    await uow.commit()
     return workspace
 
 
@@ -132,20 +109,15 @@ async def patch_workspace(
         uow: UoWDep,
 ) -> WorkspaceDTO:
     workspaces_service = WorkspacesService(uow)
-    try:
-        patch_fields = payload.model_dump(exclude={'workspace_version'}, exclude_unset=True)
-        patch_data = WorkspacePatchDTO(id=workspace_id, **patch_fields)
-        workspace = await workspaces_service.patch(
-            patch_data,
-            current_user.id,
-            expected_workspace_version=payload.workspace_version,
-            record_change=True,
-        )
-        await uow.commit()
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    patch_fields = payload.model_dump(exclude={'workspace_version'}, exclude_unset=True)
+    patch_data = WorkspacePatchDTO(id=workspace_id, **patch_fields)
+    workspace = await workspaces_service.patch(
+        patch_data,
+        current_user.id,
+        expected_workspace_version=payload.workspace_version,
+        record_change=True,
+    )
+    await uow.commit()
     return workspace
 
 
@@ -162,18 +134,13 @@ async def delete_workspace(
         uow: UoWDep,
 ) -> None:
     workspaces_service = WorkspacesService(uow)
-    try:
-        await workspaces_service.delete(
-            workspace_id,
-            current_user.id,
-            expected_workspace_version=payload.workspace_version,
-            record_change=True,
-        )
-        await uow.commit()
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    await workspaces_service.delete(
+        workspace_id,
+        current_user.id,
+        expected_workspace_version=payload.workspace_version,
+        record_change=True,
+    )
+    await uow.commit()
 
 
 @router.post(
@@ -189,12 +156,7 @@ async def pull_workspace_changes(
         uow: UoWDep,
 ) -> list[WorkspaceChangeCreateDTO]:
     sync_service = WorkspaceSyncService(uow)
-    try:
-        changes = await sync_service.pull_changes(current_user.id, versions)
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    changes = await sync_service.pull_changes(current_user.id, versions)
     return changes
 
 
@@ -211,13 +173,8 @@ async def push_workspace_changes(
         uow: UoWDep,
 ) -> list[WorkspacePushResultDTO]:
     sync_service = WorkspaceSyncService(uow)
-    try:
-        result = await sync_service.push_changes(current_user.id, changes)
-        await uow.commit()
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    result = await sync_service.push_changes(current_user.id, changes)
+    await uow.commit()
     return result
 
 
@@ -235,18 +192,13 @@ async def create_workspace_invite(
         uow: UoWDep,
 ) -> InviteCodeResponseDTO:
     invite_service = WorkspaceInviteService(uow)
-    try:
-        return await invite_service.create_invite(
-            workspace_id,
-            current_user.id,
-            payload.role,
-            payload.max_uses,
-            payload.expires_in_hours,
-        )
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    return await invite_service.create_invite(
+        workspace_id,
+        current_user.id,
+        payload.role,
+        payload.max_uses,
+        payload.expires_in_hours,
+    )
 
 
 @router.post(
@@ -262,12 +214,7 @@ async def join_workspace_by_invite(
         uow: UoWDep,
 ) -> WorkspaceDTO:
     invite_service = WorkspaceInviteService(uow)
-    try:
-        return await invite_service.join_workspace(payload.code, current_user.id)
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    return await invite_service.join_workspace(payload.code, current_user.id)
 
 
 @router.get(
@@ -282,12 +229,7 @@ async def list_workspace_members(
         uow: UoWDep,
 ) -> list[WorkspaceMemberDTO]:
     members_service = WorkspaceMembersService(uow)
-    try:
-        return await members_service.get_members(workspace_id, current_user.id)
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    return await members_service.get_members(workspace_id, current_user.id)
 
 
 @router.patch(
@@ -304,17 +246,12 @@ async def update_member_role(
         uow: UoWDep,
 ) -> WorkspaceMemberDTO:
     members_service = WorkspaceMembersService(uow)
-    try:
-        return await members_service.update_member_role(
-            workspace_id,
-            user_id,
-            current_user.id,
-            payload.role,
-        )
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    return await members_service.update_member_role(
+        workspace_id,
+        user_id,
+        current_user.id,
+        payload.role,
+    )
 
 
 @router.delete(
@@ -330,9 +267,4 @@ async def remove_member(
         uow: UoWDep,
 ) -> None:
     members_service = WorkspaceMembersService(uow)
-    try:
-        await members_service.remove_member(workspace_id, user_id, current_user.id)
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    await members_service.remove_member(workspace_id, user_id, current_user.id)

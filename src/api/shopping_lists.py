@@ -1,10 +1,8 @@
 import uuid
 
 from fastapi import APIRouter, status
-from sqlalchemy.exc import IntegrityError
 
 from api.dependencies import CurrentUser, UoWDep
-from api.http_exceptions import domain_to_http_exception, integrity_error_to_http_exception
 from api.schemas.list_items import (
     ListItemsCreateRequestDTO,
     ListItemsDeleteRequestDTO,
@@ -29,7 +27,6 @@ from schemas.shopping_lists import (
     ShoppingListDTO,
     ShoppingListRelItemDTO,
 )
-from services.exceptions import DomainException
 from services.list_items import ListItemsService
 from services.shopping_lists import ShoppingListsService
 
@@ -48,15 +45,10 @@ async def list_shopping_lists(
         workspace_id: uuid.UUID | None = None,
 ) -> list[ShoppingListDTO]:
     shopping_lists_service = ShoppingListsService(uow)
-    try:
-        return await shopping_lists_service.list_for_user(
-            current_user.id,
-            workspace_id=workspace_id,
-        )
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    return await shopping_lists_service.list_for_user(
+        current_user.id,
+        workspace_id=workspace_id,
+    )
 
 
 @router.get(
@@ -71,12 +63,7 @@ async def get_shopping_list(
         uow: UoWDep,
 ) -> ShoppingListRelItemDTO:
     shopping_lists_service = ShoppingListsService(uow)
-    try:
-        return await shopping_lists_service.get_with_items(list_id, current_user.id)
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    return await shopping_lists_service.get_with_items(list_id, current_user.id)
 
 
 @router.get(
@@ -91,12 +78,7 @@ async def get_list_items(
         uow: UoWDep,
 ) -> list[ListItemDTO]:
     list_items_service = ListItemsService(uow)
-    try:
-        return await list_items_service.list_for_user(list_id, current_user.id)
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    return await list_items_service.list_for_user(list_id, current_user.id)
 
 
 @router.get(
@@ -112,12 +94,7 @@ async def get_list_item(
         uow: UoWDep,
 ) -> ListItemDTO:
     list_items_service = ListItemsService(uow)
-    try:
-        return await list_items_service.get_for_user(list_id, item_id, current_user.id)
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    return await list_items_service.get_for_user(list_id, item_id, current_user.id)
 
 
 @router.post(
@@ -140,19 +117,14 @@ async def create_shopping_list(
         ListItemCreateDTO(list_id=list_data.id, **item.model_dump())
         for item in payload.items
     ]
-    try:
-        created_list = await shopping_lists_service.create(
-            list_data,
-            current_user.id,
-            expected_workspace_version=payload.workspace_version,
-            record_change=True,
-            items=item_data,
-        )
-        await uow.commit()
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    created_list = await shopping_lists_service.create(
+        list_data,
+        current_user.id,
+        expected_workspace_version=payload.workspace_version,
+        record_change=True,
+        items=item_data,
+    )
+    await uow.commit()
     return created_list
 
 
@@ -169,20 +141,15 @@ async def patch_shopping_list(
         uow: UoWDep,
 ) -> ShoppingListDTO:
     shopping_lists_service = ShoppingListsService(uow)
-    try:
-        patch_fields = payload.model_dump(exclude={'workspace_version'}, exclude_unset=True)
-        patch_data = ShoppingListPatchDTO(id=list_id, **patch_fields)
-        updated_list = await shopping_lists_service.patch(
-            patch_data,
-            current_user.id,
-            expected_workspace_version=payload.workspace_version,
-            record_change=True,
-        )
-        await uow.commit()
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    patch_fields = payload.model_dump(exclude={'workspace_version'}, exclude_unset=True)
+    patch_data = ShoppingListPatchDTO(id=list_id, **patch_fields)
+    updated_list = await shopping_lists_service.patch(
+        patch_data,
+        current_user.id,
+        expected_workspace_version=payload.workspace_version,
+        record_change=True,
+    )
+    await uow.commit()
     return updated_list
 
 
@@ -199,18 +166,13 @@ async def delete_shopping_list(
         uow: UoWDep,
 ) -> None:
     shopping_lists_service = ShoppingListsService(uow)
-    try:
-        await shopping_lists_service.delete(
-            list_id,
-            current_user.id,
-            expected_workspace_version=payload.workspace_version,
-            record_change=True,
-        )
-        await uow.commit()
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    await shopping_lists_service.delete(
+        list_id,
+        current_user.id,
+        expected_workspace_version=payload.workspace_version,
+        record_change=True,
+    )
+    await uow.commit()
 
 
 @router.post(
@@ -231,21 +193,16 @@ async def create_list_items(
         ListItemCreateDTO(list_id=list_id, **item.model_dump())
         for item in payload.items
     ]
-    try:
-        created_items = await list_items_service.create(
-            ListItemsCreateDTO(
-                list_id=list_id,
-                items=items,
-            ),
-            current_user.id,
-            expected_workspace_version=payload.workspace_version,
-            record_change=True,
-        )
-        await uow.commit()
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    created_items = await list_items_service.create(
+        ListItemsCreateDTO(
+            list_id=list_id,
+            items=items,
+        ),
+        current_user.id,
+        expected_workspace_version=payload.workspace_version,
+        record_change=True,
+    )
+    await uow.commit()
     return created_items
 
 
@@ -263,21 +220,16 @@ async def patch_list_items(
 ) -> list[ListItemDTO]:
     list_items_service = ListItemsService(uow)
     items = [ListItemPatchDTO(**item.model_dump()) for item in payload.items]
-    try:
-        updated_items = await list_items_service.patch(
-            ListItemsPatchDTO(
-                list_id=list_id,
-                items=items,
-            ),
-            current_user.id,
-            expected_workspace_version=payload.workspace_version,
-            record_change=True,
-        )
-        await uow.commit()
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    updated_items = await list_items_service.patch(
+        ListItemsPatchDTO(
+            list_id=list_id,
+            items=items,
+        ),
+        current_user.id,
+        expected_workspace_version=payload.workspace_version,
+        record_change=True,
+    )
+    await uow.commit()
     return updated_items
 
 
@@ -294,18 +246,13 @@ async def delete_list_items(
         uow: UoWDep,
 ) -> None:
     list_items_service = ListItemsService(uow)
-    try:
-        await list_items_service.delete(
-            ListItemsDeleteDTO(
-                list_id=list_id,
-                ids=payload.ids,
-            ),
-            current_user.id,
-            expected_workspace_version=payload.workspace_version,
-            record_change=True,
-        )
-        await uow.commit()
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    await list_items_service.delete(
+        ListItemsDeleteDTO(
+            list_id=list_id,
+            ids=payload.ids,
+        ),
+        current_user.id,
+        expected_workspace_version=payload.workspace_version,
+        record_change=True,
+    )
+    await uow.commit()
