@@ -5,6 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from api.auth import router as auth_router
+from api.route_exceptions import register_route_exception_handlers
 from api.shopping_lists import router as shopping_lists_router
 from api.utils import router as utils_router
 from api.workspaces import router as workspaces_router
@@ -15,6 +16,7 @@ rebuild_models()
 
 
 app = FastAPI(title='ShoppingLists API')
+register_route_exception_handlers(app)
 app.include_router(utils_router)
 app.include_router(auth_router)
 app.include_router(workspaces_router)

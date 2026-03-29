@@ -170,7 +170,7 @@ class BaseRepository(Generic[ModelOrm, CreateDTO, DTO], metaclass=LoggerMeta):
 
         stmt = update(self._model)
         if hasattr(self._model, 'deleted_at'):
-            stmt = stmt.where(self._model.deleted_at.is_(None))
+            stmt = stmt.where(self._model.deleted_at.is_(None)).execution_options(synchronize_session=None)
         await self._session.execute(stmt, payloads)
         await self._flush_if_needed()
         return len(payloads)
@@ -203,6 +203,7 @@ class BaseRepository(Generic[ModelOrm, CreateDTO, DTO], metaclass=LoggerMeta):
                 .where(pk_column.in_(ids))
                 .where(self._model.deleted_at.is_(None))
                 .values(deleted_at=deleted_at)
+                .execution_options(synchronize_session=None)
             )
         else:
             stmt = sa_delete(self._model).where(pk_column.in_(ids))

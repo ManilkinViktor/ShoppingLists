@@ -1,21 +1,21 @@
 from fastapi import APIRouter, Cookie, Response, status
-from sqlalchemy.exc import IntegrityError
 from uuid_utils import uuid7
 
 from api.auth_tokens import build_access_token_response, clear_refresh_cookie, set_refresh_cookie, \
     decode_refresh_token_or_raise, decode_refresh_token
-from api.dependencies import CurrentUser, UoWDep
-from api.http_exceptions import (
-    domain_to_http_exception,
-    integrity_error_to_http_exception,
-    invalid_refresh_token_http_exception,
+from api.docs.responses import (
+    AUTH_REQUIRED_RESPONSE,
+    INVALID_CREDENTIALS_RESPONSE,
+    INVALID_REFRESH_TOKEN_RESPONSE,
+    USER_CREATE_CONFLICT_RESPONSE,
 )
+from api.dependencies import CurrentUser, UoWDep
+from api.http_exceptions import invalid_refresh_token_http_exception
 from api.schemas.auth import TokenDTO, UserLoginDTO, UserRegisterDTO
 from core.config import settings
 from core.security import create_refresh_token
 from schemas.users import UserDTO, UserCreateDTO
 from services.auth import AuthService
-from services.exceptions import DomainException
 from services.users import UserService
 
 router = APIRouter(prefix='/auth', tags=['auth'])
@@ -27,6 +27,7 @@ router = APIRouter(prefix='/auth', tags=['auth'])
     status_code=status.HTTP_201_CREATED,
     summary='Register a new user',
     description='Creates a user account, issues an access token, and sets a refresh token cookie.',
+    responses=USER_CREATE_CONFLICT_RESPONSE,
 )
 async def register(
         response: Response,
@@ -36,15 +37,10 @@ async def register(
     user_service = UserService(uow)
     user_data = UserCreateDTO(id=str(uuid7()), **payload.model_dump())
 
-    try:
-        user = await user_service.create(user_data)
-        refresh_token, refresh_jti, refresh_expires_at = create_refresh_token(user.id)
-        await uow.refresh_sessions.add(user.id, refresh_jti, refresh_expires_at)
-        await uow.commit()
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    user = await user_service.create(user_data)
+    refresh_token, refresh_jti, refresh_expires_at = create_refresh_token(user.id)
+    await uow.refresh_sessions.add(user.id, refresh_jti, refresh_expires_at)
+    await uow.commit()
 
     set_refresh_cookie(response, refresh_token)
     return build_access_token_response(user)
@@ -55,6 +51,7 @@ async def register(
     response_model=TokenDTO,
     summary='Log in with email and password',
     description='Authenticates a user, returns an access token, and sets a refresh token cookie.',
+    responses=INVALID_CREDENTIALS_RESPONSE,
 )
 async def login(
         response: Response,
@@ -62,15 +59,10 @@ async def login(
         uow: UoWDep,
 ) -> TokenDTO:
     auth_service = AuthService(uow)
-    try:
-        user = await auth_service.authenticate(str(payload.email), payload.password)
-        refresh_token, refresh_jti, refresh_expires_at = create_refresh_token(user.id)
-        await uow.refresh_sessions.add(user.id, refresh_jti, refresh_expires_at)
-        await uow.commit()
-    except DomainException as error:
-        raise domain_to_http_exception(error) from None
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    user = await auth_service.authenticate(str(payload.email), payload.password)
+    refresh_token, refresh_jti, refresh_expires_at = create_refresh_token(user.id)
+    await uow.refresh_sessions.add(user.id, refresh_jti, refresh_expires_at)
+    await uow.commit()
 
     set_refresh_cookie(response, refresh_token)
     return build_access_token_response(user)
@@ -81,6 +73,7 @@ async def login(
     response_model=TokenDTO,
     summary='Refresh access token',
     description='Uses the refresh token cookie to rotate the refresh session and issue a new access token.',
+    responses=INVALID_REFRESH_TOKEN_RESPONSE,
 )
 async def refresh(
         response: Response,
@@ -104,12 +97,9 @@ async def refresh(
     if not was_revoked:
         raise invalid_refresh_token_http_exception()
 
-    try:
-        new_refresh_token, new_refresh_jti, new_refresh_expires_at = create_refresh_token(user.id)
-        await uow.refresh_sessions.add(user.id, new_refresh_jti, new_refresh_expires_at)
-        await uow.commit()
-    except IntegrityError as error:
-        raise integrity_error_to_http_exception(error) from None
+    new_refresh_token, new_refresh_jti, new_refresh_expires_at = create_refresh_token(user.id)
+    await uow.refresh_sessions.add(user.id, new_refresh_jti, new_refresh_expires_at)
+    await uow.commit()
 
     set_refresh_cookie(response, new_refresh_token)
     return build_access_token_response(user)
@@ -146,6 +136,7 @@ async def logout(
     response_model=UserDTO,
     summary='Get current user profile',
     description='Returns the authenticated user resolved from the bearer access token.',
+    responses=AUTH_REQUIRED_RESPONSE,
 )
 async def get_me(current_user: CurrentUser) -> UserDTO:
     return current_user

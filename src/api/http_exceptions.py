@@ -62,6 +62,21 @@ def integrity_error_to_http_exception(error: IntegrityError) -> HTTPException:
     )
 
 
+def internal_server_error_http_exception() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail={'code': 'INTERNAL_SERVER_ERROR', 'message': 'Internal server error'},
+    )
+
+
+def unauthorized_credentials_http_exception() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail='Could not validate credentials',
+        headers={'WWW-Authenticate': 'Bearer'},
+    )
+
+
 def invalid_refresh_token_http_exception() -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
