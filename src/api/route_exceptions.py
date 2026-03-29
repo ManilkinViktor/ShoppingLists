@@ -1,5 +1,3 @@
-import logging
-
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
@@ -9,9 +7,10 @@ from api.http_exceptions import (
     integrity_error_to_http_exception,
     internal_server_error_http_exception,
 )
+from core.logger import get_logger
 from services.exceptions import DomainException
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def _http_exception_to_response(exception: HTTPException) -> JSONResponse:
@@ -19,6 +18,14 @@ def _http_exception_to_response(exception: HTTPException) -> JSONResponse:
         status_code=exception.status_code,
         content={'detail': exception.detail},
         headers=exception.headers,
+    )
+
+
+def _log_internal_exception(request: Request, exception: Exception, message: str) -> None:
+    logger.error(
+        message,
+        extra={'path': str(request.url.path), 'method': request.method},
+        exc_info=exception,
     )
 
 
@@ -32,22 +39,29 @@ async def handle_domain_exception(
 
 
 async def handle_integrity_error(
-    _request: Request,
+    request: Request,
     exception: Exception,
 ) -> JSONResponse:
     if not isinstance(exception, IntegrityError):
         raise TypeError('handle_integrity_error expects IntegrityError')
-    return _http_exception_to_response(integrity_error_to_http_exception(exception))
+    http_exception = integrity_error_to_http_exception(exception)
+    if http_exception.status_code >= 500:
+        _log_internal_exception(
+            request,
+            exception,
+            'Unhandled integrity error while processing request',
+        )
+    return _http_exception_to_response(http_exception)
 
 
 async def handle_unexpected_exception(
     request: Request,
     exception: Exception,
 ) -> JSONResponse:
-    logger.error(
+    _log_internal_exception(
+        request,
+        exception,
         'Unhandled exception while processing request',
-        extra={'path': str(request.url.path), 'method': request.method},
-        exc_info=exception,
     )
     return _http_exception_to_response(internal_server_error_http_exception())
 

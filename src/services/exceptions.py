@@ -38,3 +38,7 @@ class EntityNotFound(DomainException):
 class DuplicateWorkspaceSyncPayload(DomainException):
     error_code: str = 'DUPLICATE_WORKSPACE_SYNC_PAYLOAD'
     public_message: str = 'Sync payload must contain one item per workspace'
+
+class InvalidListItemQuantity(DomainException):
+    error_code: str = 'INVALID_ITEM_QUANTITY'
+    public_message: str = "Item quantity must be positive"

@@ -44,6 +44,14 @@ def get_queue_handler() -> logging.Handler:
     return QueueHandler(_log_queue)
 
 
+def get_logger(name: str) -> logging.Logger:
+    logger = logging.getLogger(name)
+    logger.propagate = False
+    if not any(isinstance(h, QueueHandler) for h in logger.handlers):
+        logger.addHandler(get_queue_handler())
+    return logger
+
+
 
 class LoggerMeta(ABCMeta):
     """
@@ -53,12 +61,7 @@ class LoggerMeta(ABCMeta):
 
     def __new__(mcs, name: str, bases: tuple, namespace: dict[str, Any], **kwargs: Any) -> type:
         logger_name = f"{namespace.get('__module__')}.{name}"
-        logger = logging.getLogger(logger_name)
-        logger.propagate = False
-        if not any(isinstance(h, QueueHandler) for h in logger.handlers):
-            handler = get_queue_handler()
-            logger.addHandler(handler)
-
+        logger = get_logger(logger_name)
         namespace['logger'] = logger
 
         return super().__new__(mcs, name, bases, namespace, **kwargs)

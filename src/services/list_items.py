@@ -18,7 +18,7 @@ from schemas.workspace_changes import (
     UnionOperation,
 )
 from services.base import BaseService
-from services.exceptions import ConflictUUID, EntityNotFound
+from services.exceptions import ConflictUUID, EntityNotFound, InvalidListItemQuantity
 
 
 class ListItemsService(BaseService):
@@ -276,6 +276,8 @@ class ListItemsService(BaseService):
             quantity_delta = patch_fields.pop('delta_quantity', None)
             if quantity_delta is not None:
                 patch_fields['quantity'] = (current_item.quantity or 0) + quantity_delta
+                if patch_fields['quantity'] <= 0:
+                    raise InvalidListItemQuantity
             if not patch_fields:
                 continue
             update_data_by_id[item_data.id] = patch_fields
