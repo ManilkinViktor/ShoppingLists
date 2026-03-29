@@ -2,6 +2,12 @@ import uuid
 
 from fastapi import APIRouter, status
 
+from api.docs.responses import (
+    AUTH_REQUIRED_RESPONSE,
+    CREATE_CONFLICT_RESPONSE,
+    NOT_FOUND_RESPONSE,
+    VERSION_CONFLICT_RESPONSE,
+)
 from api.dependencies import CurrentUser, UoWDep
 from api.schemas.list_items import (
     ListItemsCreateRequestDTO,
@@ -38,6 +44,7 @@ router = APIRouter(prefix='/shopping-lists', tags=['shopping-lists'])
     response_model=list[ShoppingListDTO],
     summary='List shopping lists',
     description='Returns shopping lists available to the current user, optionally filtered by workspace.',
+    responses=AUTH_REQUIRED_RESPONSE,
 )
 async def list_shopping_lists(
         current_user: CurrentUser,
@@ -56,6 +63,10 @@ async def list_shopping_lists(
     response_model=ShoppingListRelItemDTO,
     summary='Get shopping list details',
     description='Returns one shopping list together with all of its items.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+    },
 )
 async def get_shopping_list(
         list_id: uuid.UUID,
@@ -71,6 +82,10 @@ async def get_shopping_list(
     response_model=list[ListItemDTO],
     summary='List items in shopping list',
     description='Returns all items from the specified shopping list.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+    },
 )
 async def get_list_items(
         list_id: uuid.UUID,
@@ -86,6 +101,10 @@ async def get_list_items(
     response_model=ListItemDTO,
     summary='Get shopping list item',
     description='Returns a single item from the specified shopping list.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+    },
 )
 async def get_list_item(
         list_id: uuid.UUID,
@@ -103,6 +122,11 @@ async def get_list_item(
     status_code=status.HTTP_201_CREATED,
     summary='Create shopping list',
     description='Creates a shopping list and optionally creates its initial items in the same request.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+        **CREATE_CONFLICT_RESPONSE,
+    },
 )
 async def create_shopping_list(
         payload: ShoppingListCreateWithItemsDTO,
@@ -133,6 +157,11 @@ async def create_shopping_list(
     response_model=ShoppingListDTO,
     summary='Update shopping list',
     description='Updates shopping list fields.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+        **VERSION_CONFLICT_RESPONSE,
+    },
 )
 async def patch_shopping_list(
         list_id: uuid.UUID,
@@ -158,6 +187,11 @@ async def patch_shopping_list(
     status_code=status.HTTP_204_NO_CONTENT,
     summary='Delete shopping list',
     description='Soft-deletes a shopping list.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+        **VERSION_CONFLICT_RESPONSE,
+    },
 )
 async def delete_shopping_list(
         list_id: uuid.UUID,
@@ -181,6 +215,11 @@ async def delete_shopping_list(
     status_code=status.HTTP_201_CREATED,
     summary='Create shopping list items',
     description='Creates one or more items in the specified shopping list.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+        **CREATE_CONFLICT_RESPONSE,
+    },
 )
 async def create_list_items(
         list_id: uuid.UUID,
@@ -211,6 +250,11 @@ async def create_list_items(
     response_model=list[ListItemDTO],
     summary='Update shopping list items',
     description='Updates one or more items in the specified shopping list.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+        **VERSION_CONFLICT_RESPONSE,
+    },
 )
 async def patch_list_items(
         list_id: uuid.UUID,
@@ -238,6 +282,11 @@ async def patch_list_items(
     status_code=status.HTTP_204_NO_CONTENT,
     summary='Delete shopping list items',
     description='Soft-deletes one or more items from the specified shopping list.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+        **VERSION_CONFLICT_RESPONSE,
+    },
 )
 async def delete_list_items(
         list_id: uuid.UUID,

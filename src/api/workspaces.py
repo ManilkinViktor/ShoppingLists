@@ -2,6 +2,13 @@ import uuid
 
 from fastapi import APIRouter, status
 
+from api.docs.responses import (
+    AUTH_REQUIRED_RESPONSE,
+    NOT_FOUND_RESPONSE,
+    SYNC_PAYLOAD_RESPONSE,
+    UUID_CONFLICT_RESPONSE,
+    VERSION_CONFLICT_RESPONSE,
+)
 from api.dependencies import CurrentUser, UoWDep
 from api.schemas.workspace_invites import CreateInviteRequestDTO, JoinByInviteRequestDTO
 from api.schemas.workspace_members import UpdateMemberRoleRequestDTO
@@ -31,6 +38,7 @@ router = APIRouter(prefix='/workspaces', tags=['workspaces'])
     response_model=list[WorkspaceDTO],
     summary='List accessible workspaces',
     description='Returns all workspaces available to the current user.',
+    responses=AUTH_REQUIRED_RESPONSE,
 )
 async def list_workspaces(
         current_user: CurrentUser,
@@ -45,6 +53,7 @@ async def list_workspaces(
     response_model=list[WorkspaceRelListDTO],
     summary='List workspaces with shopping lists',
     description='Returns accessible workspaces together with nested shopping lists and items.',
+    responses=AUTH_REQUIRED_RESPONSE,
 )
 async def list_workspaces_with_lists(
         current_user: CurrentUser,
@@ -59,6 +68,10 @@ async def list_workspaces_with_lists(
     response_model=WorkspaceRelListDTO,
     summary='Get workspace details',
     description='Returns a single workspace with its shopping lists and list items.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+    },
 )
 async def get_workspace(
         workspace_id: uuid.UUID,
@@ -75,6 +88,10 @@ async def get_workspace(
     status_code=status.HTTP_201_CREATED,
     summary='Create workspace',
     description='Creates a new workspace for the current user and records the change for sync.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **UUID_CONFLICT_RESPONSE,
+    },
 )
 async def create_workspace(
         payload: WorkspaceCreateRequestDTO,
@@ -101,6 +118,11 @@ async def create_workspace(
     response_model=WorkspaceDTO,
     summary='Update workspace',
     description='Updates workspace fields.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+        **VERSION_CONFLICT_RESPONSE,
+    },
 )
 async def patch_workspace(
         workspace_id: uuid.UUID,
@@ -126,6 +148,11 @@ async def patch_workspace(
     status_code=status.HTTP_204_NO_CONTENT,
     summary='Delete workspace',
     description='Soft-deletes a workspace.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+        **VERSION_CONFLICT_RESPONSE,
+    },
 )
 async def delete_workspace(
         workspace_id: uuid.UUID,
@@ -149,6 +176,11 @@ async def delete_workspace(
     status_code=status.HTTP_200_OK,
     summary='Pull workspace changes',
     description='Returns workspace changes newer than the versions known by the client.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+        **SYNC_PAYLOAD_RESPONSE,
+    },
 )
 async def pull_workspace_changes(
         versions: list[WorkspaceVersionDTO],
@@ -166,6 +198,11 @@ async def pull_workspace_changes(
     status_code=status.HTTP_200_OK,
     summary='Push workspace changes',
     description='Applies a client sync payload and returns per-workspace push results.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+        **SYNC_PAYLOAD_RESPONSE,
+    },
 )
 async def push_workspace_changes(
         changes: list[WorkspaceChangeCreateDTO],
@@ -184,6 +221,10 @@ async def push_workspace_changes(
     status_code=status.HTTP_201_CREATED,
     summary='Create invite code',
     description='Generates a join code for a workspace with the requested role and invite limits.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+    },
 )
 async def create_workspace_invite(
         workspace_id: uuid.UUID,
@@ -207,6 +248,10 @@ async def create_workspace_invite(
     status_code=status.HTTP_200_OK,
     summary='Join workspace by invite code',
     description='Adds the current user to a workspace using an active invite code.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+    },
 )
 async def join_workspace_by_invite(
         payload: JoinByInviteRequestDTO,
@@ -222,6 +267,10 @@ async def join_workspace_by_invite(
     response_model=list[WorkspaceMemberDTO],
     summary='List workspace members',
     description='Returns all members of the workspace visible to the current user.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+    },
 )
 async def list_workspace_members(
         workspace_id: uuid.UUID,
@@ -237,6 +286,10 @@ async def list_workspace_members(
     response_model=WorkspaceMemberDTO,
     summary='Update member role',
     description='Changes the role of a workspace member. Restricted to the workspace owner.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+    },
 )
 async def update_member_role(
         workspace_id: uuid.UUID,
@@ -259,6 +312,10 @@ async def update_member_role(
     status_code=status.HTTP_204_NO_CONTENT,
     summary='Remove workspace member',
     description='Removes a user from the workspace. Restricted to the workspace owner.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+    },
 )
 async def remove_member(
         workspace_id: uuid.UUID,

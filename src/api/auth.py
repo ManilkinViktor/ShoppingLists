@@ -3,6 +3,12 @@ from uuid_utils import uuid7
 
 from api.auth_tokens import build_access_token_response, clear_refresh_cookie, set_refresh_cookie, \
     decode_refresh_token_or_raise, decode_refresh_token
+from api.docs.responses import (
+    AUTH_REQUIRED_RESPONSE,
+    INVALID_CREDENTIALS_RESPONSE,
+    INVALID_REFRESH_TOKEN_RESPONSE,
+    USER_CREATE_CONFLICT_RESPONSE,
+)
 from api.dependencies import CurrentUser, UoWDep
 from api.http_exceptions import invalid_refresh_token_http_exception
 from api.schemas.auth import TokenDTO, UserLoginDTO, UserRegisterDTO
@@ -21,6 +27,7 @@ router = APIRouter(prefix='/auth', tags=['auth'])
     status_code=status.HTTP_201_CREATED,
     summary='Register a new user',
     description='Creates a user account, issues an access token, and sets a refresh token cookie.',
+    responses=USER_CREATE_CONFLICT_RESPONSE,
 )
 async def register(
         response: Response,
@@ -44,6 +51,7 @@ async def register(
     response_model=TokenDTO,
     summary='Log in with email and password',
     description='Authenticates a user, returns an access token, and sets a refresh token cookie.',
+    responses=INVALID_CREDENTIALS_RESPONSE,
 )
 async def login(
         response: Response,
@@ -65,6 +73,7 @@ async def login(
     response_model=TokenDTO,
     summary='Refresh access token',
     description='Uses the refresh token cookie to rotate the refresh session and issue a new access token.',
+    responses=INVALID_REFRESH_TOKEN_RESPONSE,
 )
 async def refresh(
         response: Response,
@@ -127,6 +136,7 @@ async def logout(
     response_model=UserDTO,
     summary='Get current user profile',
     description='Returns the authenticated user resolved from the bearer access token.',
+    responses=AUTH_REQUIRED_RESPONSE,
 )
 async def get_me(current_user: CurrentUser) -> UserDTO:
     return current_user

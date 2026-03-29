@@ -69,6 +69,14 @@ def internal_server_error_http_exception() -> HTTPException:
     )
 
 
+def unauthorized_credentials_http_exception() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail='Could not validate credentials',
+        headers={'WWW-Authenticate': 'Bearer'},
+    )
+
+
 def invalid_refresh_token_http_exception() -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
