@@ -260,3 +260,4 @@ cython_debug/
 /.editorconfig
 /.pylintrc
 /.vscode/settings.json
+/.env.prod
