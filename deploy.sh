@@ -29,7 +29,7 @@ rsync -avz --delete \
 echo "--- 2. Деплой на сервере ---"
 ssh -T "$SERVER_USER@$SERVER_IP" << EOF
     cd "$PROJECT_DIR"
-    docker compose -f docker-compose.prod.yml up -d --build
+cd    docker compose -f docker-compose.prod.yml up -d --build
     docker image prune -f
 EOF
 
