@@ -14,6 +14,7 @@ class ShoppingListsRepository(
         ShoppingListsOrm,
         ShoppingListCreateDTO,
         ShoppingListDTO,
+        uuid.UUID,
     ]):
 
     def __init__(self, _session: AsyncSession) -> None:

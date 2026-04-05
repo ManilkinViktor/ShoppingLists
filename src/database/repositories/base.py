@@ -11,9 +11,10 @@ from schemas.types import CreateDTO, DTO
 from utils.datetime_utils import utc_now
 
 ModelOrm = TypeVar('ModelOrm', bound=Base)
+TypeID = TypeVar('TypeID')
 
 
-class BaseRepository(Generic[ModelOrm, CreateDTO, DTO], metaclass=LoggerMeta):
+class BaseRepository(Generic[ModelOrm, CreateDTO, DTO, TypeID], metaclass=LoggerMeta):
     def __init__(self, _session: AsyncSession,
                  _model: Type[ModelOrm], _add_dto: Type[CreateDTO], _dto: Type[DTO]):
         self._session = _session
@@ -133,7 +134,7 @@ class BaseRepository(Generic[ModelOrm, CreateDTO, DTO], metaclass=LoggerMeta):
         return bool(instance)
 
     @logging_method_exception(SQLAlchemyError)
-    async def update(self, id_value: Any, **update_data) -> DTO | None:
+    async def update(self, id_value: TypeID, **update_data) -> DTO | None:
         instance = await self._session.get(self._model, id_value)
         if instance and getattr(instance, "deleted_at", None) is None:
             for key, value in update_data.items():
@@ -146,7 +147,7 @@ class BaseRepository(Generic[ModelOrm, CreateDTO, DTO], metaclass=LoggerMeta):
     @logging_method_exception(SQLAlchemyError)
     async def update_many(
             self,
-            update_data_by_id: dict[Any, dict[str, Any]],
+            update_data_by_id: dict[TypeID, dict[str, Any]],
     ) -> int:
         if not update_data_by_id:
             return 0
@@ -176,7 +177,7 @@ class BaseRepository(Generic[ModelOrm, CreateDTO, DTO], metaclass=LoggerMeta):
         return len(payloads)
 
     @logging_method_exception(SQLAlchemyError)
-    async def delete(self, id_value: Any) -> bool:
+    async def delete(self, id_value: TypeID) -> bool:
         instance = await self._session.get(self._model, id_value)
         if instance and getattr(instance, "deleted_at", None) is None:
             if hasattr(instance, "deleted_at"):
@@ -188,7 +189,7 @@ class BaseRepository(Generic[ModelOrm, CreateDTO, DTO], metaclass=LoggerMeta):
         return False
 
     @logging_method_exception(SQLAlchemyError)
-    async def delete_many(self, id_values: Sequence[Any]) -> int:
+    async def delete_many(self, id_values: Sequence[TypeID]) -> int:
         if not id_values:
             return 0
 

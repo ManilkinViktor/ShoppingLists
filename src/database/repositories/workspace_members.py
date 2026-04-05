@@ -12,7 +12,8 @@ class WorkspaceMembersRepository(
     BaseRepository[
         WorkspaceMembersOrm,
         WorkspaceMemberCreateDTO,
-        WorkspaceMemberDTO
+        WorkspaceMemberDTO,
+        tuple[UUID, UUID]
     ]
 ):
 

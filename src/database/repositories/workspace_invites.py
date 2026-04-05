@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models import WorkspaceInvitesOrm
@@ -9,7 +11,8 @@ class WorkspaceInvitesRepository(
     BaseRepository[
         WorkspaceInvitesOrm,
         WorkspaceInviteCreateDTO,
-        WorkspaceInviteDTO
+        WorkspaceInviteDTO,
+        UUID,
     ]
 ):
 

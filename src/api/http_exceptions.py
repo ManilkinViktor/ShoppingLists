@@ -7,6 +7,8 @@ from services.exceptions import (
     EmailAlreadyExists,
     EntityNotFound,
     InvalidCredentials,
+    OwnerRemovalForbidden,
+    OwnerRoleChangeForbidden,
     WorkspaceVersionMismatch,
 )
 
@@ -23,6 +25,16 @@ def domain_to_http_exception(error: DomainException) -> HTTPException:
             detail={'code': error.error_code, 'message': error.public_message},
         )
     if isinstance(error, WorkspaceVersionMismatch):
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={'code': error.error_code, 'message': error.public_message},
+        )
+    if isinstance(error, OwnerRoleChangeForbidden):
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={'code': error.error_code, 'message': error.public_message},
+        )
+    if isinstance(error, OwnerRemovalForbidden):
         return HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={'code': error.error_code, 'message': error.public_message},

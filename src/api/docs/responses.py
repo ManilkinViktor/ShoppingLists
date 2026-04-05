@@ -14,6 +14,8 @@ from services.exceptions import (
     DuplicateWorkspaceSyncPayload,
     EmailAlreadyExists,
     InvalidCredentials,
+    OwnerRemovalForbidden,
+    OwnerRoleChangeForbidden,
     WorkspaceVersionMismatch,
 )
 
@@ -123,6 +125,16 @@ VERSION_CONFLICT_RESPONSE = {
     status.HTTP_409_CONFLICT: documented_http_exception(
         'Workspace version does not match the current server state.',
         domain_to_http_exception(WorkspaceVersionMismatch()),
+    )
+}
+
+OWNER_PROTECTION_RESPONSE = {
+    status.HTTP_409_CONFLICT: documented_http_exceptions(
+        'Workspace owner cannot be demoted or removed.',
+        {
+            'owner_role_change_forbidden': domain_to_http_exception(OwnerRoleChangeForbidden()),
+            'owner_removal_forbidden': domain_to_http_exception(OwnerRemovalForbidden()),
+        },
     )
 }
 

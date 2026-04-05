@@ -15,7 +15,7 @@ from schemas import rebuild_models
 rebuild_models()
 
 
-app = FastAPI(title='ShoppingLists API')
+app = FastAPI(title='ShoppingLists API', root_path='/shopping_lists_api')
 register_route_exception_handlers(app)
 app.include_router(utils_router)
 app.include_router(auth_router)
@@ -30,4 +30,10 @@ if not any(isinstance(h, logging.handlers.QueueHandler) for h in root_logger.han
 
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8000)
+    uvicorn.run(
+        app,
+        host='0.0.0.0',
+        port=8000,
+        proxy_headers=True,
+        forwarded_allow_ips="*",
+    )

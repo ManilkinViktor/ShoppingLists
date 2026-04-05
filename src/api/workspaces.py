@@ -5,6 +5,7 @@ from fastapi import APIRouter, status
 from api.docs.responses import (
     AUTH_REQUIRED_RESPONSE,
     NOT_FOUND_RESPONSE,
+    OWNER_PROTECTION_RESPONSE,
     SYNC_PAYLOAD_RESPONSE,
     UUID_CONFLICT_RESPONSE,
     VERSION_CONFLICT_RESPONSE,
@@ -289,6 +290,7 @@ async def list_workspace_members(
     responses={
         **AUTH_REQUIRED_RESPONSE,
         **NOT_FOUND_RESPONSE,
+        **OWNER_PROTECTION_RESPONSE,
     },
 )
 async def update_member_role(
@@ -299,12 +301,14 @@ async def update_member_role(
         uow: UoWDep,
 ) -> WorkspaceMemberDTO:
     members_service = WorkspaceMembersService(uow)
-    return await members_service.update_member_role(
+    member = await members_service.update_member_role(
         workspace_id,
         user_id,
         current_user.id,
         payload.role,
     )
+    await uow.commit()
+    return member
 
 
 @router.delete(
@@ -315,6 +319,7 @@ async def update_member_role(
     responses={
         **AUTH_REQUIRED_RESPONSE,
         **NOT_FOUND_RESPONSE,
+        **OWNER_PROTECTION_RESPONSE,
     },
 )
 async def remove_member(
@@ -325,3 +330,4 @@ async def remove_member(
 ) -> None:
     members_service = WorkspaceMembersService(uow)
     await members_service.remove_member(workspace_id, user_id, current_user.id)
+    await uow.commit()
