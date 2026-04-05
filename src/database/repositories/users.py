@@ -14,7 +14,8 @@ class UsersRepository(
     BaseRepository[
         UsersOrm,
         UserCreateAuthDTO,
-        UserDTO
+        UserDTO,
+        uuid.UUID,
     ]):
     def __init__(self, _session: AsyncSession) -> None:
         super().__init__(

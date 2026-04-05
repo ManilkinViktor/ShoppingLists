@@ -14,7 +14,8 @@ class WorkspacesRepository(
     BaseRepository[
         WorkspacesOrm,
         WorkspaceCreateDTO,
-        WorkspaceDTO
+        WorkspaceDTO,
+        uuid.UUID,
     ]):
 
     def __init__(self, _session: AsyncSession) -> None:

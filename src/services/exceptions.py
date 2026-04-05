@@ -39,6 +39,16 @@ class DuplicateWorkspaceSyncPayload(DomainException):
     error_code: str = 'DUPLICATE_WORKSPACE_SYNC_PAYLOAD'
     public_message: str = 'Sync payload must contain one item per workspace'
 
+
+class OwnerRoleChangeForbidden(DomainException):
+    error_code: str = 'OWNER_ROLE_CHANGE_FORBIDDEN'
+    public_message: str = 'Workspace owner role cannot be changed'
+
+
+class OwnerRemovalForbidden(DomainException):
+    error_code: str = 'OWNER_REMOVAL_FORBIDDEN'
+    public_message: str = 'Workspace owner cannot be removed'
+
 class InvalidListItemQuantity(DomainException):
     error_code: str = 'INVALID_ITEM_QUANTITY'
     public_message: str = "Item quantity must be positive"

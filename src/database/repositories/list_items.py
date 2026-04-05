@@ -1,3 +1,4 @@
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models import ListItemsOrm
@@ -9,7 +10,8 @@ class ListItemsRepository(
     BaseRepository[
         ListItemsOrm,
         ListItemCreateDTO,
-        ListItemDTO
+        ListItemDTO,
+        UUID,
     ]):
 
     def __init__(self, _session: AsyncSession) -> None:
