@@ -18,58 +18,21 @@ from schemas.workspace_changes import (
 )
 from services.base import BaseService
 from services.exceptions import ConflictUUID, EntityNotFound
+
 from services.list_items import ListItemsService
+from services.access_control import AccessController
 
 
 class ShoppingListsService(BaseService):
+
     def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
         self._editable_workspace_ids: set[UUID] | None = None
         self._workspace_id_by_list_id: dict[UUID, UUID] = {}
+        self._access_control = AccessController(uow, self.logger)
 
     def set_editable_workspace_ids(self, editable_workspace_ids: set[UUID] | None) -> None:
         self._editable_workspace_ids = editable_workspace_ids
-
-    async def _ensure_member_access(
-            self,
-            current_user: UUID,
-            workspace_id: UUID,
-            entity_type: type,
-    ) -> None:
-        member = await self.uow.workspace_members.get_by(
-            user_id=current_user,
-            workspace_id=workspace_id,
-        )
-        if not member:
-            self._log_warning(
-                "User doesn't have access to shopping list",
-                extra={'workspace_id': workspace_id, 'user_id': current_user},
-                immediate=True
-            )
-            raise EntityNotFound(entity_type)
-
-    async def _ensure_editor_access(self, current_user: UUID, workspace_id: UUID) -> None:
-        if self._editable_workspace_ids is not None:
-            if workspace_id in self._editable_workspace_ids:
-                return
-            self._log_warning(
-                "User doesn't have access to shopping list",
-                extra={'workspace_id': workspace_id, 'user_id': current_user},
-                immediate=True,
-            )
-            raise EntityNotFound(ShoppingListDTO)
-
-        member = await self.uow.workspace_members.get_by(
-            user_id=current_user,
-            workspace_id=workspace_id,
-        )
-        if not member or member.role != Role.editor:
-            self._log_warning(
-                "User doesn't have access to shopping list",
-                extra={'workspace_id': workspace_id, 'user_id': current_user},
-                immediate=True,
-            )
-            raise EntityNotFound(ShoppingListDTO)
 
     async def _get_workspace_id_for_list(self, list_id: UUID) -> UUID:
         cached_workspace_id = self._workspace_id_by_list_id.get(list_id)
@@ -97,7 +60,12 @@ class ShoppingListsService(BaseService):
             deferred: bool,
     ) -> ShoppingListDTO | None:
         create_data = create_data.model_copy(update={'created_by': current_user})
-        await self._ensure_editor_access(current_user, create_data.workspace_id)
+        await self._access_control.ensure_editor_access(
+            current_user,
+            create_data.workspace_id,
+            editable_workspace_ids=self._editable_workspace_ids,
+            entity_type=ShoppingListDTO,
+        )
 
         found_list: ShoppingListDTO | None = await self.uow.shopping_lists.get(create_data.id)
         if found_list:
@@ -127,7 +95,12 @@ class ShoppingListsService(BaseService):
             items: list[ListItemCreateDTO] | None = None,
     ) -> ShoppingListDTO:
         normalized_create_data = create_data.model_copy(update={'created_by': current_user})
-        await self._ensure_editor_access(current_user, normalized_create_data.workspace_id)
+        await self._access_control.ensure_editor_access(
+            current_user,
+            normalized_create_data.workspace_id,
+            editable_workspace_ids=self._editable_workspace_ids,
+            entity_type=ShoppingListDTO,
+        )
         found_list = await self.uow.shopping_lists.get(create_data.id)
         has_create = found_list is None
 
@@ -200,7 +173,12 @@ class ShoppingListsService(BaseService):
             record_change: bool = False,
     ) -> ShoppingListDTO:
         workspace_id = await self._get_workspace_id_for_list(patch_data.id)
-        await self._ensure_editor_access(current_user, workspace_id)
+        await self._access_control.ensure_editor_access(
+            current_user,
+            workspace_id,
+            editable_workspace_ids=self._editable_workspace_ids,
+            entity_type=ShoppingListDTO,
+        )
 
         patch_fields = patch_data.model_dump(exclude_unset=True)
         patch_fields.pop('id', None)
@@ -255,7 +233,12 @@ class ShoppingListsService(BaseService):
             record_change: bool = False,
     ) -> None:
         workspace_id = await self._get_workspace_id_for_list(list_id)
-        await self._ensure_editor_access(current_user, workspace_id)
+        await self._access_control.ensure_editor_access(
+            current_user,
+            workspace_id,
+            editable_workspace_ids=self._editable_workspace_ids,
+            entity_type=ShoppingListDTO,
+        )
 
         new_version: int | None = None
         if expected_workspace_version is not None:
@@ -288,7 +271,11 @@ class ShoppingListsService(BaseService):
             workspace_id: UUID | None = None,
     ) -> list[ShoppingListDTO]:
         if workspace_id is not None:
-            await self._ensure_member_access(current_user, workspace_id, ShoppingListDTO)
+            await self._access_control.ensure_member_access(
+                current_user,
+                workspace_id,
+                entity_type=ShoppingListDTO,
+            )
             return await self.uow.shopping_lists.get_all(workspace_id=workspace_id)
         members = await self.uow.workspace_members.get_all(user_id=current_user)
         workspace_ids = {member.workspace_id for member in members}
@@ -305,9 +292,9 @@ class ShoppingListsService(BaseService):
         if not shopping_list:
             self._log_warning("Shopping list not found", extra={'list_id': list_id}, immediate=True)
             raise EntityNotFound(ShoppingListDTO)
-        await self._ensure_member_access(
+        await self._access_control.ensure_member_access(
             current_user,
             shopping_list.workspace_id,
-            ShoppingListDTO,
+            entity_type=ShoppingListDTO,
         )
         return shopping_list

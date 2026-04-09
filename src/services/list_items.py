@@ -17,8 +17,10 @@ from schemas.workspace_changes import (
     ListItemsPatchOperation,
     UnionOperation,
 )
+
 from services.base import BaseService
 from services.exceptions import ConflictUUID, EntityNotFound, InvalidListItemQuantity
+from services.access_control import AccessController
 
 
 class ListItemsService(BaseService):
@@ -26,50 +28,10 @@ class ListItemsService(BaseService):
         super().__init__(uow)
         self._editable_workspace_ids: set[UUID] | None = None
         self._workspace_id_by_list_id: dict[UUID, UUID] = {}
+        self._access_control = AccessController(uow, self.logger)
 
     def set_editable_workspace_ids(self, editable_workspace_ids: set[UUID] | None) -> None:
         self._editable_workspace_ids = editable_workspace_ids
-
-    async def _ensure_member_access(
-            self,
-            current_user: UUID,
-            workspace_id: UUID,
-            entity_type: type,
-    ) -> None:
-        member = await self.uow.workspace_members.get_by(
-            user_id=current_user,
-            workspace_id=workspace_id,
-        )
-        if not member:
-            self._log_warning(
-                "User doesn't have access to list item",
-                extra={'workspace_id': workspace_id, 'user_id': current_user},
-                immediate=True,
-            )
-            raise EntityNotFound(entity_type)
-
-    async def _ensure_editor_access(self, current_user: UUID, workspace_id: UUID) -> None:
-        if self._editable_workspace_ids is not None:
-            if workspace_id in self._editable_workspace_ids:
-                return
-            self._log_warning(
-                "User doesn't have access to list item",
-                extra={'workspace_id': workspace_id, 'user_id': current_user},
-                immediate=True,
-            )
-            raise EntityNotFound(ListItemDTO)
-
-        member = await self.uow.workspace_members.get_by(
-            user_id=current_user,
-            workspace_id=workspace_id,
-        )
-        if not member or member.role != Role.editor:
-            self._log_warning(
-                "User doesn't have access to list item",
-                extra={'workspace_id': workspace_id, 'user_id': current_user},
-                immediate=True,
-            )
-            raise EntityNotFound(ListItemDTO)
 
     async def _get_workspace_id_for_list(self, list_id: UUID) -> UUID:
         cached_workspace_id = self._workspace_id_by_list_id.get(list_id)
@@ -103,7 +65,12 @@ class ListItemsService(BaseService):
         list_id = create_data.list_id
         items = create_data.items
         workspace_id = await self._get_workspace_id_for_list(list_id)
-        await self._ensure_editor_access(current_user, workspace_id)
+        await self._access_control.ensure_editor_access(
+            current_user,
+            workspace_id,
+            editable_workspace_ids=self._editable_workspace_ids,
+            entity_type=ListItemDTO,
+        )
 
         prepared_items = [item.model_copy(update={'list_id': list_id}) for item in items]
         existing_items_by_id = await self._get_items_by_ids([item.id for item in prepared_items])
@@ -237,7 +204,12 @@ class ListItemsService(BaseService):
             return []
 
         workspace_id = await self._get_workspace_id_for_list(list_id)
-        await self._ensure_editor_access(current_user, workspace_id)
+        await self._access_control.ensure_editor_access(
+            current_user,
+            workspace_id,
+            editable_workspace_ids=self._editable_workspace_ids,
+            entity_type=ListItemDTO,
+        )
 
         prepared_items = [item.model_copy(update={'list_id': list_id}) for item in items]
         current_items_by_id = await self._get_items_by_ids([item.id for item in prepared_items])
@@ -341,7 +313,12 @@ class ListItemsService(BaseService):
             return
 
         workspace_id = await self._get_workspace_id_for_list(list_id)
-        await self._ensure_editor_access(current_user, workspace_id)
+        await self._access_control.ensure_editor_access(
+            current_user,
+            workspace_id,
+            editable_workspace_ids=self._editable_workspace_ids,
+            entity_type=ListItemDTO,
+        )
 
         current_items_by_id = await self._get_items_by_ids(ids)
         for item_id in ids:
@@ -387,7 +364,11 @@ class ListItemsService(BaseService):
             current_user: UUID,
     ) -> list[ListItemDTO]:
         workspace_id = await self._get_workspace_id_for_list(list_id)
-        await self._ensure_member_access(current_user, workspace_id, ShoppingListDTO)
+        await self._access_control.ensure_member_access(
+            current_user,
+            workspace_id,
+            entity_type=ShoppingListDTO,
+        )
         return await self.uow.list_items.get_all(list_id=list_id)
 
     async def get_for_user(
@@ -401,5 +382,9 @@ class ListItemsService(BaseService):
             self._log_warning("List item not found", extra={'item_id': item_id}, immediate=True)
             raise EntityNotFound(ListItemDTO)
         workspace_id = await self._get_workspace_id_for_list(item.list_id)
-        await self._ensure_member_access(current_user, workspace_id, ListItemDTO)
+        await self._access_control.ensure_member_access(
+            current_user,
+            workspace_id,
+            entity_type=ListItemDTO,
+        )
         return item
