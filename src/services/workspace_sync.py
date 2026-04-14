@@ -31,11 +31,9 @@ class WorkspaceSyncService(BaseService):
         super().__init__(uow)
         self._workspaces_service = WorkspacesService(uow)
         self._shopping_lists_service = ShoppingListsService(uow)
-        self._list_items_service = ListItemsService(uow)
         self._service_map: dict[str, CrudService] = {
             'workspace': self._workspaces_service,
             'shopping_list': self._shopping_lists_service,
-            'list_items': self._list_items_service,
         }
 
     def _get_requested_workspace_ids(
@@ -270,7 +268,6 @@ class WorkspaceSyncService(BaseService):
         )
         self._workspaces_service.set_editable_workspace_ids(editable_workspace_ids)
         self._shopping_lists_service.set_editable_workspace_ids(editable_workspace_ids)
-        self._list_items_service.set_editable_workspace_ids(editable_workspace_ids)
 
         request_versions: dict[UUID, int] = {
             change.workspace_id: change.workspace_version for change in workspace_changes
