@@ -94,10 +94,9 @@ class ShoppingListsService(BaseService):
             record_change: bool = False,
             items: list[ListItemCreateDTO] | None = None,
     ) -> ShoppingListDTO:
-        normalized_create_data = create_data.model_copy(update={'created_by': current_user})
         await self._access_control.ensure_editor_access(
             current_user,
-            normalized_create_data.workspace_id,
+            create_data.workspace_id,
             editable_workspace_ids=self._editable_workspace_ids,
             entity_type=ShoppingListDTO,
         )
@@ -107,7 +106,7 @@ class ShoppingListsService(BaseService):
         new_version: int | None = None
         if has_create and expected_workspace_version is not None:
             new_version = await self._bump_workspace_version_or_raise(
-                normalized_create_data.workspace_id,
+                create_data.workspace_id,
                 expected_workspace_version,
             )
 
@@ -120,11 +119,11 @@ class ShoppingListsService(BaseService):
                 UnionOperation(
                     root=ShoppingListCreateOperation(
                         data=ShoppingListCreateDTO(
-                            id=normalized_create_data.id,
-                            workspace_id=normalized_create_data.workspace_id,
-                            name=normalized_create_data.name,
-                            description=normalized_create_data.description,
-                            created_by=normalized_create_data.created_by,
+                            id=create_data.id,
+                            workspace_id=create_data.workspace_id,
+                            name=create_data.name,
+                            description=create_data.description,
+                            created_by=create_data.created_by,
                         ),
                     )
                 )
@@ -229,8 +228,9 @@ class ShoppingListsService(BaseService):
                 )
             self._log_info("Shopping list was updated", extra={'list_id': patch_data.id})
         else:
-            self._log_info("Shopping list wasn't updated, nothing changes")
-            raise ValueError("Empty list's patch payload")
+            self._log_info("Shopping list wasn't updated, nothing changes", extra={'list_id': patch_data.id})
+            raise ValueError("Empty patch payload")
+
 
     async def delete(
             self,
