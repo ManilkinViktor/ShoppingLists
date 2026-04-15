@@ -1,4 +1,3 @@
-
 import logging
 from core.logger import get_queue_handler
 import uvicorn
@@ -9,13 +8,14 @@ from api.route_exceptions import register_route_exception_handlers
 from api.shopping_lists import router as shopping_lists_router
 from api.utils import router as utils_router
 from api.workspaces import router as workspaces_router
+from api.lifespan import lifespan
 from schemas import rebuild_models
 
 
 rebuild_models()
 
 
-app = FastAPI(title='ShoppingLists API', root_path='/shopping_lists_api')
+app = FastAPI(title='ShoppingLists API', root_path='/shopping_lists_api', lifespan=lifespan)
 register_route_exception_handlers(app)
 app.include_router(utils_router)
 app.include_router(auth_router)

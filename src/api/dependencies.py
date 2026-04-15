@@ -2,15 +2,27 @@ import uuid
 from typing import Annotated, TypeAlias
 
 import jwt
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from redis.asyncio import Redis
 
 from api.http_exceptions import unauthorized_credentials_http_exception
 from core.security import decode_token
 from database.uow import UnitOfWork
 from schemas.users import UserDTO
+from services.auth import AuthService
+from services.users import UserService
 
 UoWDep: TypeAlias = Annotated[UnitOfWork, Depends(UnitOfWork.get_with)]
+
+
+def get_redis(request: Request):
+    return request.state.redis
+
+RedisDep: TypeAlias = Annotated[Redis, Depends(get_redis)]
+
+AuthServiceDep: TypeAlias = Annotated[AuthService, AuthService(UoWDep, RedisDep)]
+UserServiceDep: TypeAlias = Annotated[UserService, UserService(UoWDep)]
 
 bearer_scheme = HTTPBearer(auto_error=False)
 

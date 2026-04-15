@@ -6,7 +6,7 @@ from services.exceptions import EmailAlreadyExists, ConflictUUID
 
 class UserService(BaseService):
 
-    async def create(self, user_data: UserCreateDTO) -> UserDTO:
+    async def create(self, user_data: UserCreateAuthDTO) -> UserDTO:
         found_user: UserDTO | None = await self.uow.users.get_by_filters_or(email=user_data.email, id=user_data.id)
         if found_user:
             if user_data.id == found_user.id:
@@ -17,12 +17,7 @@ class UserService(BaseService):
                     raise ConflictUUID
             self._log_info("User wasn't created: email already exists", extra={'user_id': user_data.id}, immediate=True)
             raise EmailAlreadyExists
-        hashed_password: str = await hash_password(user_data.password)
-        user_auth_data: UserCreateAuthDTO = UserCreateAuthDTO(
-            **user_data.model_dump(),
-            hashed_password=hashed_password,
-        )
-        user: UserDTO = await self.uow.users.add(user_auth_data)
+        user: UserDTO = await self.uow.users.add(user_data)
         self._log_info("User was created", extra={'user_id': user_data.id})
         return user
 

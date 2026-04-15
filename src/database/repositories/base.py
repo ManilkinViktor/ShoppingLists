@@ -74,7 +74,7 @@ class BaseRepository(Generic[ModelOrm, CreateDTO, DTO, TypeID], metaclass=Logger
             self._session.add(instance)
 
     @logging_method_exception(SQLAlchemyError)
-    async def get(self, id_value: Any) -> DTO | None:
+    async def get(self, id_value: TypeID) -> DTO | None:
         instance = await self._session.get(self._model, id_value)
         if instance and getattr(instance, "deleted_at", None) is not None:
             return None
