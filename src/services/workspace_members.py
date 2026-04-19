@@ -4,10 +4,9 @@ from core.enums import Role
 from database.uow import UnitOfWork
 from schemas.workspace_members import WorkspaceMemberDTO
 from schemas.workspaces import WorkspaceDTO
-
+from services.access_control import AccessController
 from services.base import BaseService
 from services.exceptions import EntityNotFound, OwnerRemovalForbidden, OwnerRoleChangeForbidden
-from services.access_control import AccessController
 
 
 class WorkspaceMembersService(BaseService):
@@ -16,11 +15,11 @@ class WorkspaceMembersService(BaseService):
         self._access_control = AccessController(uow, self.logger)
 
     async def update_member_role(
-        self,
-        workspace_id: UUID,
-        user_id: UUID,
-        current_user: UUID,
-        new_role: Role,
+            self,
+            workspace_id: UUID,
+            user_id: UUID,
+            current_user: UUID,
+            new_role: Role,
     ) -> WorkspaceMemberDTO:
         workspace = await self._access_control.ensure_owner_access(current_user, workspace_id, WorkspaceDTO)
         if workspace.owner_id == user_id:
@@ -56,10 +55,10 @@ class WorkspaceMembersService(BaseService):
         return updated_member
 
     async def remove_member(
-        self,
-        workspace_id: UUID,
-        user_id: UUID,
-        current_user: UUID,
+            self,
+            workspace_id: UUID,
+            user_id: UUID,
+            current_user: UUID,
     ) -> None:
         workspace = await self._access_control.ensure_owner_access(current_user, workspace_id, WorkspaceDTO)
         if workspace.owner_id == user_id:
@@ -81,9 +80,9 @@ class WorkspaceMembersService(BaseService):
         )
 
     async def get_members(
-        self,
-        workspace_id: UUID,
-        current_user: UUID,
+            self,
+            workspace_id: UUID,
+            current_user: UUID,
     ) -> list[WorkspaceMemberDTO]:
         member = await self.uow.workspace_members.get_by(
             workspace_id=workspace_id,

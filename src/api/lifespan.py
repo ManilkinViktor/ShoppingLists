@@ -1,9 +1,12 @@
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from redis.asyncio import Redis
+
 from core.retries import retry
 
 redis_client = Redis(host="redis", port=6379, decode_responses=True)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

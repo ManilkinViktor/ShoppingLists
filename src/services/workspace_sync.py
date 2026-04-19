@@ -13,7 +13,6 @@ from schemas.workspace_changes import (
 from schemas.workspaces import WorkspaceDTO
 from services.base import BaseService
 from services.exceptions import DuplicateWorkspaceSyncPayload, EntityNotFound
-from services.list_items import ListItemsService
 from services.shopping_lists import ShoppingListsService
 from services.workspaces import WorkspacesService
 

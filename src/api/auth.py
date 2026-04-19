@@ -1,23 +1,20 @@
 from fastapi import APIRouter, Cookie, Response, status
-from pydantic import EmailStr
-from uuid_utils import uuid7
 
-from api.auth_tokens import build_access_token_response, clear_refresh_cookie, set_refresh_cookie, \
-    decode_refresh_token_or_raise, decode_refresh_token
+from api.auth_tokens import build_access_token_response, clear_refresh_cookie, set_refresh_cookie, decode_refresh_token
+from api.dependencies import CurrentUser, UoWDep, AuthServiceDep, UserServiceDep
 from api.docs.responses import (
     AUTH_REQUIRED_RESPONSE,
     INVALID_CREDENTIALS_RESPONSE,
     INVALID_REFRESH_TOKEN_RESPONSE,
     USER_CREATE_CONFLICT_RESPONSE,
 )
-from api.dependencies import CurrentUser, UoWDep, AuthServiceDep, UserServiceDep
-from api.http_exceptions import invalid_refresh_token_http_exception
 from api.schemas.auth import TokenDTO, UserLoginDTO, UserRegisterDTO, VerifyCodeDTO
 from core.config import settings
-from core.security import create_refresh_token, generate_code, hash_code
-from schemas.users import UserDTO, UserCreateDTO, UserCreateAuthDTO
+from core.security import create_refresh_token
+from schemas.users import UserDTO, UserCreateAuthDTO
 
 router = APIRouter(prefix='/auth', tags=['auth'])
+
 
 async def _set_email_verify_cookie(response: Response, session_id: str):
     response.set_cookie(
@@ -30,6 +27,7 @@ async def _set_email_verify_cookie(response: Response, session_id: str):
         path='/auth',
     )
 
+
 @router.post(
     '/register',
     response_model=VerifyCodeDTO,
@@ -41,10 +39,12 @@ async def _set_email_verify_cookie(response: Response, session_id: str):
 async def register(
         response: Response,
         payload: UserRegisterDTO,
+        uow: UoWDep,
         auth_service: AuthServiceDep,
 ) -> VerifyCodeDTO:
     session_id, verify_code = await auth_service.register(payload)
     await _set_email_verify_cookie(response, session_id)
+    await uow.commit()
     return verify_code
 
 
@@ -107,30 +107,12 @@ async def login(
 async def refresh(
         response: Response,
         uow: UoWDep,
+        auth_service: AuthServiceDep,
         refresh_token: str | None = Cookie(default=None, alias=settings.JWT_REFRESH_COOKIE_NAME),
 ) -> TokenDTO:
-    if refresh_token is None:
-        raise invalid_refresh_token_http_exception()
-
-    user_id, refresh_jti = decode_refresh_token_or_raise(refresh_token)
-
-    user = await uow.users.get(user_id)
-    if user is None or user.deleted_at is not None:
-        raise invalid_refresh_token_http_exception()
-
-    is_active = await uow.refresh_sessions.is_active(user_id, refresh_jti)
-    if not is_active:
-        raise invalid_refresh_token_http_exception()
-
-    was_revoked = await uow.refresh_sessions.revoke(user_id, refresh_jti)
-    if not was_revoked:
-        raise invalid_refresh_token_http_exception()
-
-    new_refresh_token, new_refresh_jti, new_refresh_expires_at = create_refresh_token(user.id)
-    await uow.refresh_sessions.add(user.id, new_refresh_jti, new_refresh_expires_at)
-    await uow.commit()
-
+    user, new_refresh_token = await auth_service.refresh_token(refresh_token)
     set_refresh_cookie(response, new_refresh_token)
+    await uow.commit()
     return build_access_token_response(user)
 
 

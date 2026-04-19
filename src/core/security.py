@@ -1,6 +1,7 @@
 import datetime
+import hashlib
+import secrets
 import uuid
-import secrets, hashlib
 from typing import Any
 
 import bcrypt
@@ -9,6 +10,7 @@ from fastapi.concurrency import run_in_threadpool
 
 from core.config import settings
 from utils.datetime_utils import utc_now
+
 
 def generate_code():
     return str(secrets.randbelow(1000000))

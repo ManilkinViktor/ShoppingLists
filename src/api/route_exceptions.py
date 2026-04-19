@@ -30,8 +30,8 @@ def _log_internal_exception(request: Request, exception: Exception, message: str
 
 
 async def handle_domain_exception(
-    _request: Request,
-    exception: Exception,
+        _request: Request,
+        exception: Exception,
 ) -> JSONResponse:
     if not isinstance(exception, DomainException):
         raise TypeError('handle_domain_exception expects DomainException')
@@ -39,8 +39,8 @@ async def handle_domain_exception(
 
 
 async def handle_integrity_error(
-    request: Request,
-    exception: Exception,
+        request: Request,
+        exception: Exception,
 ) -> JSONResponse:
     if not isinstance(exception, IntegrityError):
         raise TypeError('handle_integrity_error expects IntegrityError')
@@ -55,8 +55,8 @@ async def handle_integrity_error(
 
 
 async def handle_unexpected_exception(
-    request: Request,
-    exception: Exception,
+        request: Request,
+        exception: Exception,
 ) -> JSONResponse:
     _log_internal_exception(
         request,

@@ -2,7 +2,6 @@ from typing import Annotated
 
 from pydantic import BaseModel, EmailStr, Field, StringConstraints
 
-
 from core.constants import FieldConstraints
 from schemas.users import PasswordWithConfirm, password_field
 
@@ -21,7 +20,9 @@ class TokenDTO(BaseModel):
     access_token: str
     token_type: str = 'bearer'
 
+
 SixDigitCode = Annotated[str, StringConstraints(pattern=r"^\d{6}$")]
+
 
 class VerifyCodeDTO(BaseModel):
     code: SixDigitCode

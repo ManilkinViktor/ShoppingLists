@@ -1,6 +1,5 @@
 ﻿from uuid import UUID
 
-from core.enums import Role
 from database.uow import UnitOfWork
 from schemas.list_items import ListItemCreateDTO, ListItemsCreateDTO, ListItemsPatchDTO, ListItemsDeleteDTO
 from schemas.shopping_lists import (
@@ -15,11 +14,10 @@ from schemas.workspace_changes import (
     ShoppingListPatchOperation,
     UnionOperation,
 )
+from services.access_control import AccessController
 from services.base import BaseService
 from services.exceptions import ConflictUUID, EntityNotFound
-
 from services.list_items import ListItemsService
-from services.access_control import AccessController
 
 
 class ShoppingListsService(BaseService):
@@ -230,7 +228,6 @@ class ShoppingListsService(BaseService):
         else:
             self._log_info("Shopping list wasn't updated, nothing changes", extra={'list_id': patch_data.id})
             raise ValueError("Empty patch payload")
-
 
     async def delete(
             self,

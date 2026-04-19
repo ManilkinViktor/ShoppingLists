@@ -1,22 +1,22 @@
-from uuid import UUID
 from logging import WARNING
+from uuid import UUID
 
 from core.enums import Role
-from schemas.workspaces import WorkspaceDTO
 from schemas.workspace_members import WorkspaceMemberDTO
+from schemas.workspaces import WorkspaceDTO
 from services.exceptions import EntityNotFound
+
 
 class AccessController:
     def __init__(self, uow, logger):
         self.uow = uow
         self.logger = logger
 
-
     async def ensure_member_access(
-        self,
-        current_user: UUID,
-        workspace_id: UUID,
-        entity_type: type = WorkspaceDTO,
+            self,
+            current_user: UUID,
+            workspace_id: UUID,
+            entity_type: type = WorkspaceDTO,
     ):
         member = await self.uow.workspace_members.get_by(
             user_id=current_user,
@@ -28,11 +28,11 @@ class AccessController:
             raise EntityNotFound(entity_type)
 
     async def ensure_editor_access(
-        self,
-        current_user: UUID,
-        workspace_id: UUID,
-        editable_workspace_ids: set[UUID] | None = None,
-        entity_type: type = WorkspaceDTO,
+            self,
+            current_user: UUID,
+            workspace_id: UUID,
+            editable_workspace_ids: set[UUID] | None = None,
+            entity_type: type = WorkspaceDTO,
     ):
         if editable_workspace_ids is not None:
             if workspace_id in editable_workspace_ids:
@@ -63,6 +63,7 @@ class AccessController:
             user_id=user_id,
         )
         if not member:
-            self.uow.log(self.logger, WARNING, "Member not found", extra={'workspace_id': workspace_id, 'user_id': user_id}, immediate=True)
+            self.uow.log(self.logger, WARNING, "Member not found",
+                         extra={'workspace_id': workspace_id, 'user_id': user_id}, immediate=True)
             raise EntityNotFound(WorkspaceMemberDTO)
         return member

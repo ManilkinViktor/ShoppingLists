@@ -9,8 +9,8 @@ from database.repositories.refresh_sessions import RefreshSessionsRepository
 from database.repositories.shopping_lists import ShoppingListsRepository
 from database.repositories.users import UsersRepository
 from database.repositories.workspace_changes import WorkspaceChangesRepository
-from database.repositories.workspace_members import WorkspaceMembersRepository
 from database.repositories.workspace_invites import WorkspaceInvitesRepository
+from database.repositories.workspace_members import WorkspaceMembersRepository
 from database.repositories.workspaces import WorkspacesRepository
 from database.session import session_factory
 

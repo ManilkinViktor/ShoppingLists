@@ -49,6 +49,7 @@ class OwnerRemovalForbidden(DomainException):
     error_code: str = 'OWNER_REMOVAL_FORBIDDEN'
     public_message: str = 'Workspace owner cannot be removed'
 
+
 class InvalidListItemQuantity(DomainException):
     error_code: str = 'INVALID_ITEM_QUANTITY'
     public_message: str = "Item quantity must be positive"

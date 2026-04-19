@@ -9,12 +9,12 @@ class RetryError(Exception):
 
 
 async def retry(
-    fn,
-    *,
-    retries: int = 10,
-    base_delay: float = 0.5,
-    max_delay: float = 5.0,
-    name: str = "service"
+        fn,
+        *,
+        retries: int = 10,
+        base_delay: float = 0.5,
+        max_delay: float = 5.0,
+        name: str = "service"
 ):
     delay = base_delay
     for attempt in range(retries):

@@ -1,5 +1,5 @@
 from core.security import hash_password
-from schemas.users import UserCreateDTO, UserDTO, UserCreateAuthDTO, UserBaseDTO
+from schemas.users import UserDTO, UserCreateAuthDTO, UserBaseDTO
 from services.base import BaseService
 from services.exceptions import EmailAlreadyExists, ConflictUUID
 

@@ -36,8 +36,8 @@ def _headers_for_exception(exception: HTTPException) -> dict[str, Any] | None:
 
 
 def documented_http_exception(
-    description: str,
-    exception: HTTPException,
+        description: str,
+        exception: HTTPException,
 ) -> dict[str, Any]:
     response: dict[str, Any] = {
         'model': _model_for_exception(exception),
@@ -57,8 +57,8 @@ def documented_http_exception(
 
 
 def documented_http_exceptions(
-    description: str,
-    examples: Mapping[str, HTTPException],
+        description: str,
+        examples: Mapping[str, HTTPException],
 ) -> dict[str, Any]:
     first_exception = next(iter(examples.values()))
     response: dict[str, Any] = {

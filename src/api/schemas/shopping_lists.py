@@ -2,9 +2,9 @@ import uuid
 
 from pydantic import Field
 
-from schemas.list_items import ListItemCreateDTO, ListItemPatchDTO
 from api.schemas.workspaces import WorkspaceVersionRequestDTO
 from core.constants import FieldConstraints
+from schemas.list_items import ListItemCreateDTO, ListItemPatchDTO
 from schemas.mixins import UUIDMixinDTO
 
 

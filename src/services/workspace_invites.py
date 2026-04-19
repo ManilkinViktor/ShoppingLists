@@ -6,12 +6,12 @@ from uuid import UUID
 from core.enums import Role
 from database.models import WorkspaceInvitesOrm
 from database.uow import UnitOfWork
-from schemas.workspace_invites import WorkspaceInviteCreateDTO, WorkspaceInviteDTO, InviteCodeResponseDTO
+from schemas.workspace_invites import WorkspaceInviteDTO, InviteCodeResponseDTO
 from schemas.workspace_members import WorkspaceMemberCreateDTO
 from schemas.workspaces import WorkspaceDTO
+from services.access_control import AccessController
 from services.base import BaseService
 from services.exceptions import EntityNotFound, DomainException
-from services.access_control import AccessController
 from utils.datetime_utils import utc_now
 
 
@@ -27,14 +27,13 @@ class WorkspaceInviteService(BaseService):
         chars = string.ascii_letters + string.digits
         return ''.join(secrets.choice(chars) for _ in range(WorkspaceInviteService.INVITE_CODE_LENGTH))
 
-
     async def create_invite(
-        self,
-        workspace_id: UUID,
-        current_user: UUID,
-        role: Role,
-        max_uses: int | None = None,
-        expires_in_hours: int = 24,
+            self,
+            workspace_id: UUID,
+            current_user: UUID,
+            role: Role,
+            max_uses: int | None = None,
+            expires_in_hours: int = 24,
     ) -> InviteCodeResponseDTO:
         await self._access_control.ensure_owner_access(current_user, workspace_id, WorkspaceDTO)
 

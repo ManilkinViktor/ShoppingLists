@@ -2,13 +2,13 @@ import uuid
 
 from fastapi import APIRouter, status
 
+from api.dependencies import CurrentUser, UoWDep, ShoppingListsServiceDep
 from api.docs.responses import (
     AUTH_REQUIRED_RESPONSE,
     CREATE_CONFLICT_RESPONSE,
     NOT_FOUND_RESPONSE,
     VERSION_CONFLICT_RESPONSE,
 )
-from api.dependencies import CurrentUser, UoWDep
 from api.schemas.shopping_lists import (
     ShoppingListCreateWithItemsDTO,
     ShoppingListDeleteRequestDTO,
@@ -20,7 +20,6 @@ from schemas.shopping_lists import (
     ShoppingListRelItemDTO,
     ShoppingListPatchFullDTO,
 )
-from services.shopping_lists import ShoppingListsService
 
 router = APIRouter(prefix='/shopping-lists', tags=['shopping-lists'])
 
@@ -34,10 +33,9 @@ router = APIRouter(prefix='/shopping-lists', tags=['shopping-lists'])
 )
 async def list_shopping_lists(
         current_user: CurrentUser,
-        uow: UoWDep,
+        shopping_lists_service: ShoppingListsServiceDep,
         workspace_id: uuid.UUID | None = None,
 ) -> list[ShoppingListDTO]:
-    shopping_lists_service = ShoppingListsService(uow)
     return await shopping_lists_service.lists_for_user(
         current_user.id,
         workspace_id=workspace_id,
@@ -57,12 +55,9 @@ async def list_shopping_lists(
 async def get_shopping_list(
         list_id: uuid.UUID,
         current_user: CurrentUser,
-        uow: UoWDep,
+        shopping_lists_service: ShoppingListsServiceDep,
 ) -> ShoppingListRelItemDTO:
-    shopping_lists_service = ShoppingListsService(uow)
     return await shopping_lists_service.get_with_items(list_id, current_user.id)
-
-
 
 
 @router.post(
@@ -81,8 +76,8 @@ async def create_shopping_list(
         payload: ShoppingListCreateWithItemsDTO,
         current_user: CurrentUser,
         uow: UoWDep,
+        shopping_lists_service: ShoppingListsServiceDep,
 ) -> ShoppingListDTO:
-    shopping_lists_service = ShoppingListsService(uow)
     list_data = ShoppingListCreateDTO(
         **payload.model_dump(exclude={'items', 'workspace_version'})
     )
@@ -113,8 +108,8 @@ async def patch_shopping_list(
         payload: ShoppingListPatchRequestDTO,
         current_user: CurrentUser,
         uow: UoWDep,
+        shopping_lists_service: ShoppingListsServiceDep,
 ) -> ShoppingListDTO:
-    shopping_lists_service = ShoppingListsService(uow)
     patch_fields = payload.model_dump(exclude={'workspace_version'}, exclude_unset=True)
     patch_data = ShoppingListPatchFullDTO(id=list_id, **patch_fields)
     await shopping_lists_service.patch(
@@ -144,8 +139,8 @@ async def delete_shopping_list(
         payload: ShoppingListDeleteRequestDTO,
         current_user: CurrentUser,
         uow: UoWDep,
+        shopping_lists_service: ShoppingListsServiceDep,
 ) -> None:
-    shopping_lists_service = ShoppingListsService(uow)
     await shopping_lists_service.delete(
         list_id,
         current_user.id,
@@ -153,6 +148,3 @@ async def delete_shopping_list(
         record_change=True,
     )
     await uow.commit()
-
-
-

@@ -1,8 +1,7 @@
 import uuid
 
-from uuid_utils import uuid7
-from pydantic import EmailStr
 from redis.asyncio import Redis
+from uuid_utils import uuid7
 
 from api.schemas.auth import VerifyCodeDTO, UserRegisterDTO
 from core.config import settings
@@ -17,6 +16,32 @@ class AuthService(BaseService):
     def __init__(self, uow: UnitOfWork, redis: Redis) -> None:
         super().__init__(uow)
         self.redis = redis
+
+    async def refresh_token(self, refresh_token: str):
+        from api.auth_tokens import decode_refresh_token_or_raise
+        from core.security import create_refresh_token
+        from api.http_exceptions import invalid_refresh_token_http_exception
+
+        if refresh_token is None:
+            raise invalid_refresh_token_http_exception()
+
+        user_id, refresh_jti = decode_refresh_token_or_raise(refresh_token)
+
+        user = await self.uow.users.get(user_id)
+        if user is None or user.deleted_at is not None:
+            raise invalid_refresh_token_http_exception()
+
+        is_active = await self.uow.refresh_sessions.is_active(user_id, refresh_jti)
+        if not is_active:
+            raise invalid_refresh_token_http_exception()
+
+        was_revoked = await self.uow.refresh_sessions.revoke(user_id, refresh_jti)
+        if not was_revoked:
+            raise invalid_refresh_token_http_exception()
+
+        new_refresh_token, new_refresh_jti, new_refresh_expires_at = create_refresh_token(user.id)
+        await self.uow.refresh_sessions.add(user.id, new_refresh_jti, new_refresh_expires_at)
+        return user, new_refresh_token
 
     async def register(self, register_data: UserRegisterDTO):
         found_user: UserDTO = await self.uow.users.get_by(email=register_data.email)
@@ -66,7 +91,6 @@ class AuthService(BaseService):
         await self.redis.delete(redis_key)
         return user_data
 
-
     async def authenticate(self, email: str, password: str) -> UserDTO:
         user_with_password: UserAuthDTO | None = await self.uow.users.get_by_email_with_password(email)
 
@@ -75,12 +99,14 @@ class AuthService(BaseService):
             raise InvalidCredentials
 
         if user_with_password.deleted_at is not None:
-            self._log_info('Authentication failed: user deleted', extra={'user_id': user_with_password.id}, immediate=True)
+            self._log_info('Authentication failed: user deleted', extra={'user_id': user_with_password.id},
+                           immediate=True)
             raise InvalidCredentials
 
         is_valid_password = await check_password(password, user_with_password.hashed_password)
         if not is_valid_password:
-            self._log_info('Authentication failed: invalid password', extra={'user_id': user_with_password.id}, immediate=True)
+            self._log_info('Authentication failed: invalid password', extra={'user_id': user_with_password.id},
+                           immediate=True)
             raise InvalidCredentials
 
         return UserDTO(**user_with_password.model_dump())

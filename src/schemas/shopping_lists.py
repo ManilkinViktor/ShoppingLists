@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING
 
 from pydantic import Field
 
-from schemas.list_items import ListItemCreateDTO, ListItemPatchDTO
 from core.constants import FieldConstraints
+from schemas.list_items import ListItemCreateDTO, ListItemPatchDTO
 from schemas.mixins import UUIDMixinDTO, TimeStampMixinDTO
 
 if TYPE_CHECKING:
@@ -22,6 +22,7 @@ class ShoppingListCreateDTO(UUIDMixinDTO):
 class ShoppingListPatchDTO(UUIDMixinDTO):
     name: str | None = Field(default=None, min_length=1, max_length=FieldConstraints.BASE_LEN)
     description: str | None = Field(default=None, max_length=FieldConstraints.DESCRIPTION_LEN)
+
 
 class ShoppingListPatchFullDTO(ShoppingListPatchDTO):
     create_items: list[ListItemCreateDTO] = Field(default_factory=list)

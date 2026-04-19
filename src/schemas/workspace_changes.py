@@ -31,6 +31,7 @@ class ShoppingListPatchOperation(PatchOperation[ShoppingListPatchFullDTO]):
 class ShoppingListDeleteOperation(DeleteOperation[uuid.UUID]):
     op: Literal['shopping_list.delete'] = 'shopping_list.delete'
 
+
 class UnionOperation(RootModel):
     root: Union[
         WorkspaceCreateOperation,

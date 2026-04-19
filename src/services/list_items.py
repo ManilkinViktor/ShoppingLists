@@ -15,7 +15,6 @@ from services.base import BaseService
 from services.exceptions import ConflictUUID, EntityNotFound, InvalidListItemQuantity
 
 
-
 class ListItemsService(BaseService):
     def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
@@ -160,7 +159,6 @@ class ListItemsService(BaseService):
         if not has_changes:
             return None
 
-
         update_data_by_id: dict[UUID, dict[str, object]] = {}
         changed_items: list[ListItemPatchDTO] = []
         for item_data in prepared_items:
@@ -188,7 +186,8 @@ class ListItemsService(BaseService):
 
         updated_items_by_id = await self._get_items_by_ids(list(update_data_by_id))
         if len(updated_items_by_id) != len(update_data_by_id):
-            self._log_warning("Some list items were not loaded after update", extra={'list_id': list_id}, immediate=True)
+            self._log_warning("Some list items were not loaded after update", extra={'list_id': list_id},
+                              immediate=True)
             raise EntityNotFound(ListItemDTO)
         return None
 
@@ -215,4 +214,3 @@ class ListItemsService(BaseService):
 
         for item_id in ids:
             self._log_info("List item was deleted", extra={'item_id': item_id})
-
