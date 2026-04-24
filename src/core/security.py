@@ -13,7 +13,7 @@ from utils.datetime_utils import utc_now
 
 
 def generate_code():
-    return str(secrets.randbelow(1000000))
+    return f'{secrets.randbelow(1000000):06d}'
 
 
 def hash_code(code: str):

@@ -22,7 +22,7 @@ UoWDep: TypeAlias = Annotated[UnitOfWork, Depends(UnitOfWork.get_with)]
 
 
 def get_redis(request: Request):
-    return request.state.redis
+    return request.app.state.redis
 
 
 RedisDep: TypeAlias = Annotated[Redis, Depends(get_redis)]

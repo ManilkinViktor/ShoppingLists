@@ -63,7 +63,7 @@ class AuthService(BaseService):
             mapping={
                 "code_hash": code_hash,
                 "attempts": 0,
-                "user_data": user_data.model_dump()
+                "user_data": user_data.model_dump_json()
             }
         )
         await self.redis.expire(redis_key, settings.VERIFY_EMAIL_EXPIRE_SECONDS)
@@ -87,7 +87,7 @@ class AuthService(BaseService):
             await self.redis.hincrby(redis_key, "attempts", 1)
             self._log_info('Verify failed, invalid code')
             raise ValueError('Invalid code')
-        user_data = UserCreateAuthDTO.model_validate(stored.get('user_data'))
+        user_data = UserCreateAuthDTO.model_validate_json(stored.get('user_data'))
         await self.redis.delete(redis_key)
         return user_data
 
