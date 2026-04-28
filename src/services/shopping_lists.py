@@ -1,5 +1,6 @@
 ﻿from uuid import UUID
 
+from api.http_exceptions import ValidationError
 from database.uow import UnitOfWork
 from schemas.list_items import ListItemCreateDTO, ListItemsCreateDTO, ListItemsPatchDTO, ListItemsDeleteDTO
 from schemas.shopping_lists import (
@@ -227,7 +228,7 @@ class ShoppingListsService(BaseService):
             self._log_info("Shopping list was updated", extra={'list_id': patch_data.id})
         else:
             self._log_info("Shopping list wasn't updated, nothing changes", extra={'list_id': patch_data.id})
-            raise ValueError("Empty patch payload")
+            raise ValidationError("Empty patch payload")
 
     async def delete(
             self,

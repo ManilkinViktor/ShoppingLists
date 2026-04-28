@@ -16,13 +16,14 @@ from core.enums import Role
 from services.workspace_sync import WorkspaceSyncService
 from services.exceptions import DuplicateWorkspaceSyncPayload
 from schemas.workspace_changes import (
-    ListItemsCreateOperation,
     WorkspaceChangeCreateDTO,
     WorkspaceVersionDTO,
     UnionOperation,
     WorkspacePatchOperation,
+    ShoppingListPatchOperation,
 )
-from schemas.list_items import ListItemCreateDTO, ListItemsCreateDTO
+from schemas.list_items import ListItemCreateDTO
+from schemas.shopping_lists import ShoppingListPatchFullDTO
 from schemas.workspaces import WorkspacePatchDTO
 
 
@@ -66,19 +67,16 @@ def _build_uow(
     return uow
 
 
-def _wire_dummy_services(sync_service: WorkspaceSyncService) -> DummyCrudService:
+def _wire_dummy_services(sync_service: WorkspaceSyncService) -> tuple[DummyCrudService, DummyCrudService]:
     workspace_service = DummyCrudService()
     shopping_list_service = DummyCrudService()
-    list_item_service = DummyCrudService()
     sync_service._workspaces_service = workspace_service
     sync_service._shopping_lists_service = shopping_list_service
-    sync_service._list_items_service = list_item_service
     sync_service._service_map = {
         "workspace": workspace_service,
         "shopping_list": shopping_list_service,
-        "list_items": list_item_service,
     }
-    return workspace_service
+    return workspace_service, shopping_list_service
 
 
 @pytest.mark.asyncio
@@ -114,7 +112,7 @@ async def test_workspace_sync_push_viewer_rejected() -> None:
         compare_versions_result={},
     )
     sync_service = WorkspaceSyncService(uow)
-    workspace_service = _wire_dummy_services(sync_service)
+    workspace_service, _ = _wire_dummy_services(sync_service)
 
     patch_op = WorkspacePatchOperation(
         data=WorkspacePatchDTO(id=workspace_id, name="viewer-updated"),
@@ -146,7 +144,7 @@ async def test_workspace_sync_push_editor_applies_and_bumps() -> None:
         compare_versions_result=bumped_versions,
     )
     sync_service = WorkspaceSyncService(uow)
-    workspace_service = _wire_dummy_services(sync_service)
+    workspace_service, _ = _wire_dummy_services(sync_service)
 
     patch_data = WorkspacePatchDTO(id=workspace_id, name="sync-updated")
     patch_op = WorkspacePatchOperation(data=patch_data)
@@ -168,7 +166,7 @@ async def test_workspace_sync_push_editor_applies_and_bumps() -> None:
 
 
 @pytest.mark.asyncio
-async def test_workspace_sync_push_grouped_item_create_uses_batch_method() -> None:
+async def test_workspace_sync_push_grouped_item_patch_uses_batch_method() -> None:
     user_id = _uuid7()
     workspace_id = _uuid7()
     list_id = _uuid7()
@@ -182,8 +180,7 @@ async def test_workspace_sync_push_grouped_item_create_uses_batch_method() -> No
         compare_versions_result=bumped_versions,
     )
     sync_service = WorkspaceSyncService(uow)
-    _wire_dummy_services(sync_service)
-    list_item_service = sync_service._list_items_service
+    _, shopping_list_service = _wire_dummy_services(sync_service)
 
     item_data = ListItemCreateDTO(
         id=item_id,
@@ -194,28 +191,23 @@ async def test_workspace_sync_push_grouped_item_create_uses_batch_method() -> No
         category="dairy",
         is_purchased=False,
     )
-    create_op = ListItemsCreateOperation(
-        data=ListItemsCreateDTO(
-            list_id=list_id,
-            items=[item_data],
-        ),
+    patch_data = ShoppingListPatchFullDTO(
+        id=list_id,
+        create_items=[item_data],
+    )
+    patch_op = ShoppingListPatchOperation(
+        data=patch_data,
     )
     change = WorkspaceChangeCreateDTO(
         workspace_id=workspace_id,
         workspace_version=1,
-        changes=[UnionOperation(root=create_op)],
+        changes=[UnionOperation(root=patch_op)],
     )
 
     result = await sync_service.push_changes(user_id, [change])
 
     assert result[0].accepted is True
-    list_item_service.create_deferred.assert_awaited_once_with(
-        ListItemsCreateDTO(
-            list_id=list_id,
-            items=[item_data],
-        ),
-        user_id,
-    )
+    shopping_list_service.patch.assert_awaited_once()
 
 
 @pytest.mark.asyncio

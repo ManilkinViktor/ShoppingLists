@@ -64,7 +64,8 @@ async def verify(
         session_id: str | None = Cookie(default=None, alias=settings.VERIFY_EMAIL_COOKIE_NAME)
 ):
     if session_id is None:
-        raise ValueError('Invalid verify session')
+        from api.http_exceptions import ValidationError
+        raise ValidationError('Invalid verify session')
     user_data: UserCreateAuthDTO = await auth_service.verify(payload, session_id)
     user = await user_service.create(user_data)
     refresh_token, refresh_jti, refresh_expires_at = create_refresh_token(user.id)

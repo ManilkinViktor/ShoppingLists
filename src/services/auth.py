@@ -76,17 +76,20 @@ class AuthService(BaseService):
         redis_key = f'verify:{session_id}'
         stored = await self.redis.hgetall(redis_key)
         if not stored:
+            from api.http_exceptions import ValidationError
             self._log_info('Verify failed, code expired or not found')
-            raise ValueError("Code expired or not found")
+            raise ValidationError("Code expired or not found")
         attempts = int(stored.get('attempts', 0))
         if attempts >= settings.VERIFY_ATTEMPTS:
             await self.redis.delete(redis_key)
+            from api.http_exceptions import ValidationError
             self._log_info('Verify failed, too many attempts')
-            raise ValueError("Too many attempts")
+            raise ValidationError("Too many attempts")
         if hash_code(verify_data.code) != stored.get('code_hash', None):
             await self.redis.hincrby(redis_key, "attempts", 1)
+            from api.http_exceptions import ValidationError
             self._log_info('Verify failed, invalid code')
-            raise ValueError('Invalid code')
+            raise ValidationError('Invalid code')
         user_data = UserCreateAuthDTO.model_validate_json(stored.get('user_data'))
         await self.redis.delete(redis_key)
         return user_data

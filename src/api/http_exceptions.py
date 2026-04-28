@@ -13,6 +13,13 @@ from services.exceptions import (
 )
 
 
+class ValidationError(ValueError):
+    """Application validation error to be communicated to clients."""
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(message)
+
+
 def domain_to_http_exception(error: DomainException) -> HTTPException:
     if isinstance(error, EmailAlreadyExists):
         return HTTPException(
@@ -94,4 +101,11 @@ def invalid_refresh_token_http_exception() -> HTTPException:
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail={'code': 'INVALID_REFRESH_TOKEN', 'message': 'Invalid refresh token'},
         headers={'WWW-Authenticate': 'Bearer'},
+    )
+
+
+def validation_error_http_exception(error: ValidationError) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail={'code': 'VALIDATION_ERROR', 'message': error.message},
     )
