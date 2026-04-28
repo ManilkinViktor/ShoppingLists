@@ -10,6 +10,7 @@ from schemas.workspace_changes import (
 )
 from schemas.workspace_members import WorkspaceMemberCreateDTO
 from schemas.workspaces import WorkspaceCreateDTO, WorkspaceDTO, WorkspacePatchDTO, WorkspaceRelListDTO
+from services.access_control import AccessController
 from services.base import BaseService
 from services.exceptions import ConflictUUID, EntityNotFound
 
@@ -18,45 +19,10 @@ class WorkspacesService(BaseService):
     def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
         self._editable_workspace_ids: set[UUID] | None = None
+        self._access_control = AccessController(uow, self.logger)
 
     def set_editable_workspace_ids(self, editable_workspace_ids: set[UUID] | None) -> None:
         self._editable_workspace_ids = editable_workspace_ids
-
-    async def _ensure_member_access(self, current_user: UUID, workspace_id: UUID) -> None:
-        member = await self.uow.workspace_members.get_by(
-            user_id=current_user,
-            workspace_id=workspace_id,
-        )
-        if not member:
-            self._log_warning(
-                "User doesn't have access to workspace",
-                extra={'workspace_id': workspace_id, 'user_id': current_user},
-                immediate=True,
-            )
-            raise EntityNotFound(WorkspaceDTO)
-
-    async def _ensure_editor_access(self, current_user: UUID, workspace_id: UUID) -> None:
-        if self._editable_workspace_ids is not None:
-            if workspace_id in self._editable_workspace_ids:
-                return
-            self._log_warning(
-                "User doesn't have access to workspace",
-                extra={'workspace_id': workspace_id, 'user_id': current_user},
-                immediate=True,
-            )
-            raise EntityNotFound(WorkspaceDTO)
-
-        member = await self.uow.workspace_members.get_by(
-            user_id=current_user,
-            workspace_id=workspace_id,
-        )
-        if not member or member.role != Role.editor:
-            self._log_warning(
-                "User doesn't have access to workspace",
-                extra={'workspace_id': workspace_id, 'user_id': current_user},
-                immediate=True,
-            )
-            raise EntityNotFound(WorkspaceDTO)
 
     async def _create_core(
             self,
@@ -139,7 +105,12 @@ class WorkspacesService(BaseService):
             expected_workspace_version: int | None = None,
             record_change: bool = False,
     ) -> WorkspaceDTO:
-        await self._ensure_editor_access(current_user, patch_data.id)
+        await self._access_control.ensure_editor_access(
+            current_user,
+            patch_data.id,
+            editable_workspace_ids=self._editable_workspace_ids,
+            entity_type=WorkspaceDTO,
+        )
 
         patch_fields = patch_data.model_dump(exclude_unset=True)
         patch_fields.pop('id', None)
@@ -188,7 +159,12 @@ class WorkspacesService(BaseService):
             expected_workspace_version: int | None = None,
             record_change: bool = False,
     ) -> None:
-        await self._ensure_editor_access(current_user, workspace_id)
+        await self._access_control.ensure_editor_access(
+            current_user,
+            workspace_id,
+            editable_workspace_ids=self._editable_workspace_ids,
+            entity_type=WorkspaceDTO,
+        )
 
         new_version: int | None = None
         if expected_workspace_version is not None:
@@ -225,7 +201,11 @@ class WorkspacesService(BaseService):
             workspace_id: UUID,
             current_user: UUID,
     ) -> WorkspaceRelListDTO:
-        await self._ensure_member_access(current_user, workspace_id)
+        await self._access_control.ensure_member_access(
+            current_user,
+            workspace_id,
+            entity_type=WorkspaceDTO,
+        )
         workspace = await self.uow.workspaces.get_workspace_with_lists(workspace_id)
         if not workspace:
             self._log_warning("Workspace not found", extra={'workspace_id': workspace_id}, immediate=True)

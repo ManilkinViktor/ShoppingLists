@@ -6,9 +6,10 @@ from uuid import UUID
 from core.enums import Role
 from database.models import WorkspaceInvitesOrm
 from database.uow import UnitOfWork
-from schemas.workspace_invites import WorkspaceInviteCreateDTO, WorkspaceInviteDTO, InviteCodeResponseDTO
+from schemas.workspace_invites import WorkspaceInviteDTO, InviteCodeResponseDTO
 from schemas.workspace_members import WorkspaceMemberCreateDTO
 from schemas.workspaces import WorkspaceDTO
+from services.access_control import AccessController
 from services.base import BaseService
 from services.exceptions import EntityNotFound, DomainException
 from utils.datetime_utils import utc_now
@@ -19,31 +20,22 @@ class WorkspaceInviteService(BaseService):
 
     def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
+        self._access_control = AccessController(uow, self.logger)
 
     @staticmethod
     def _generate_invite_code() -> str:
         chars = string.ascii_letters + string.digits
         return ''.join(secrets.choice(chars) for _ in range(WorkspaceInviteService.INVITE_CODE_LENGTH))
 
-    async def _ensure_owner_access(self, current_user: UUID, workspace_id: UUID) -> None:
-        workspace = await self.uow.workspaces.get(workspace_id)
-        if not workspace or workspace.owner_id != current_user:
-            self._log_warning(
-                "User is not the owner of workspace",
-                extra={'workspace_id': workspace_id, 'user_id': current_user},
-                immediate=True,
-            )
-            raise EntityNotFound(WorkspaceDTO)
-
     async def create_invite(
-        self,
-        workspace_id: UUID,
-        current_user: UUID,
-        role: Role,
-        max_uses: int | None = None,
-        expires_in_hours: int = 24,
+            self,
+            workspace_id: UUID,
+            current_user: UUID,
+            role: Role,
+            max_uses: int | None = None,
+            expires_in_hours: int = 24,
     ) -> InviteCodeResponseDTO:
-        await self._ensure_owner_access(current_user, workspace_id)
+        await self._access_control.ensure_owner_access(current_user, workspace_id, WorkspaceDTO)
 
         code = self._generate_invite_code()
         expires_at = utc_now() + datetime.timedelta(hours=expires_in_hours)
@@ -151,7 +143,7 @@ class WorkspaceInviteService(BaseService):
         return workspace
 
     async def list_invites(self, workspace_id: UUID, current_user: UUID) -> list[WorkspaceInviteDTO]:
-        await self._ensure_owner_access(current_user, workspace_id)
+        await self._access_control.ensure_owner_access(current_user, workspace_id, WorkspaceDTO)
         return await self.uow.workspace_invites.get_all(workspace_id=workspace_id)
 
     async def revoke_invite(self, code: str, current_user: UUID) -> None:
@@ -164,7 +156,7 @@ class WorkspaceInviteService(BaseService):
             )
             raise EntityNotFound(WorkspaceDTO)
 
-        await self._ensure_owner_access(current_user, invite.workspace_id)
+        await self._access_control.ensure_owner_access(current_user, invite.workspace_id, WorkspaceDTO)
 
         invite.is_active = False
         await self.uow.commit()

@@ -235,7 +235,7 @@ async def test_workspace_sync_pull_returns_workspace_delete_change() -> None:
             await uow.users.add(
                 UserCreateAuthDTO(
                     id=user_id,
-                    name="sync-delete",
+                        name="sync-delete",
                     email=email,
                     hashed_password="hashed",
                 )

@@ -1,4 +1,6 @@
 import datetime
+import hashlib
+import secrets
 import uuid
 from typing import Any
 
@@ -8,6 +10,14 @@ from fastapi.concurrency import run_in_threadpool
 
 from core.config import settings
 from utils.datetime_utils import utc_now
+
+
+def generate_code():
+    return f'{secrets.randbelow(1000000):06d}'
+
+
+def hash_code(code: str):
+    return hashlib.sha256(code.encode()).hexdigest()
 
 
 def _hash_password_sync(password: str) -> str:

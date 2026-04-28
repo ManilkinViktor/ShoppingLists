@@ -2,15 +2,67 @@ import uuid
 from typing import Annotated, TypeAlias
 
 import jwt
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from redis.asyncio import Redis
 
 from api.http_exceptions import unauthorized_credentials_http_exception
 from core.security import decode_token
 from database.uow import UnitOfWork
 from schemas.users import UserDTO
+from services.auth import AuthService
+from services.shopping_lists import ShoppingListsService
+from services.users import UserService
+from services.workspace_invites import WorkspaceInviteService
+from services.workspace_members import WorkspaceMembersService
+from services.workspace_sync import WorkspaceSyncService
+from services.workspaces import WorkspacesService
 
 UoWDep: TypeAlias = Annotated[UnitOfWork, Depends(UnitOfWork.get_with)]
+
+
+def get_redis(request: Request):
+    return request.app.state.redis
+
+
+RedisDep: TypeAlias = Annotated[Redis, Depends(get_redis)]
+
+
+def get_user_service(uow: UoWDep):
+    return UserService(uow)
+
+
+def get_auth_service(uow: UoWDep, redis: RedisDep):
+    return AuthService(uow, redis)
+
+
+def get_shopping_lists_service(uow: UoWDep):
+    return ShoppingListsService(uow)
+
+
+def get_workspace_service(uow: UoWDep):
+    return WorkspacesService(uow)
+
+
+def get_workspace_sync_service(uow: UoWDep):
+    return WorkspaceSyncService(uow)
+
+
+def get_workspace_members_service(uow: UoWDep):
+    return WorkspaceMembersService(uow)
+
+
+def get_workspace_invites_service(uow: UoWDep):
+    return WorkspaceInviteService(uow)
+
+
+AuthServiceDep: TypeAlias = Annotated[AuthService, Depends(get_auth_service)]
+UserServiceDep: TypeAlias = Annotated[UserService, Depends(get_user_service)]
+ShoppingListsServiceDep: TypeAlias = Annotated[ShoppingListsService, Depends(get_shopping_lists_service)]
+WorkspacesServiceDep: TypeAlias = Annotated[WorkspacesService, Depends(get_workspace_service)]
+WorkspaceSyncServiceDep: TypeAlias = Annotated[WorkspaceSyncService, Depends(get_workspace_sync_service)]
+WorkspaceMembersServiceDep: TypeAlias = Annotated[WorkspaceMembersService, Depends(get_workspace_members_service)]
+WorkspaceInviteServiceDep: TypeAlias = Annotated[WorkspaceInviteService, Depends(get_workspace_invites_service)]
 
 bearer_scheme = HTTPBearer(auto_error=False)
 

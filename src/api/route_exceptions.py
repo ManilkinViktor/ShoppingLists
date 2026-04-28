@@ -6,6 +6,8 @@ from api.http_exceptions import (
     domain_to_http_exception,
     integrity_error_to_http_exception,
     internal_server_error_http_exception,
+    validation_error_http_exception,
+    ValidationError,
 )
 from core.logger import get_logger
 from services.exceptions import DomainException
@@ -30,8 +32,8 @@ def _log_internal_exception(request: Request, exception: Exception, message: str
 
 
 async def handle_domain_exception(
-    _request: Request,
-    exception: Exception,
+        _request: Request,
+        exception: Exception,
 ) -> JSONResponse:
     if not isinstance(exception, DomainException):
         raise TypeError('handle_domain_exception expects DomainException')
@@ -39,8 +41,8 @@ async def handle_domain_exception(
 
 
 async def handle_integrity_error(
-    request: Request,
-    exception: Exception,
+        request: Request,
+        exception: Exception,
 ) -> JSONResponse:
     if not isinstance(exception, IntegrityError):
         raise TypeError('handle_integrity_error expects IntegrityError')
@@ -54,9 +56,18 @@ async def handle_integrity_error(
     return _http_exception_to_response(http_exception)
 
 
+async def handle_validation_error(
+        _request: Request,
+        exception: Exception,
+) -> JSONResponse:
+    if not isinstance(exception, ValidationError):
+        raise TypeError('handle_validation_error expects ValidationError')
+    return _http_exception_to_response(validation_error_http_exception(exception))
+
+
 async def handle_unexpected_exception(
-    request: Request,
-    exception: Exception,
+        request: Request,
+        exception: Exception,
 ) -> JSONResponse:
     _log_internal_exception(
         request,
@@ -69,4 +80,5 @@ async def handle_unexpected_exception(
 def register_route_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(DomainException, handle_domain_exception)
     app.add_exception_handler(IntegrityError, handle_integrity_error)
+    app.add_exception_handler(ValidationError, handle_validation_error)
     app.add_exception_handler(Exception, handle_unexpected_exception)

@@ -2,39 +2,24 @@ import uuid
 
 from fastapi import APIRouter, status
 
+from api.dependencies import CurrentUser, UoWDep, ShoppingListsServiceDep
 from api.docs.responses import (
     AUTH_REQUIRED_RESPONSE,
     CREATE_CONFLICT_RESPONSE,
     NOT_FOUND_RESPONSE,
     VERSION_CONFLICT_RESPONSE,
 )
-from api.dependencies import CurrentUser, UoWDep
-from api.schemas.list_items import (
-    ListItemsCreateRequestDTO,
-    ListItemsDeleteRequestDTO,
-    ListItemsPatchRequestDTO,
-)
 from api.schemas.shopping_lists import (
     ShoppingListCreateWithItemsDTO,
     ShoppingListDeleteRequestDTO,
     ShoppingListPatchRequestDTO,
 )
-from schemas.list_items import (
-    ListItemCreateDTO,
-    ListItemDTO,
-    ListItemPatchDTO,
-    ListItemsCreateDTO,
-    ListItemsDeleteDTO,
-    ListItemsPatchDTO,
-)
 from schemas.shopping_lists import (
     ShoppingListCreateDTO,
-    ShoppingListPatchDTO,
     ShoppingListDTO,
     ShoppingListRelItemDTO,
+    ShoppingListPatchFullDTO,
 )
-from services.list_items import ListItemsService
-from services.shopping_lists import ShoppingListsService
 
 router = APIRouter(prefix='/shopping-lists', tags=['shopping-lists'])
 
@@ -48,11 +33,10 @@ router = APIRouter(prefix='/shopping-lists', tags=['shopping-lists'])
 )
 async def list_shopping_lists(
         current_user: CurrentUser,
-        uow: UoWDep,
+        shopping_lists_service: ShoppingListsServiceDep,
         workspace_id: uuid.UUID | None = None,
 ) -> list[ShoppingListDTO]:
-    shopping_lists_service = ShoppingListsService(uow)
-    return await shopping_lists_service.list_for_user(
+    return await shopping_lists_service.lists_for_user(
         current_user.id,
         workspace_id=workspace_id,
     )
@@ -71,49 +55,9 @@ async def list_shopping_lists(
 async def get_shopping_list(
         list_id: uuid.UUID,
         current_user: CurrentUser,
-        uow: UoWDep,
+        shopping_lists_service: ShoppingListsServiceDep,
 ) -> ShoppingListRelItemDTO:
-    shopping_lists_service = ShoppingListsService(uow)
     return await shopping_lists_service.get_with_items(list_id, current_user.id)
-
-
-@router.get(
-    '/{list_id}/items',
-    response_model=list[ListItemDTO],
-    summary='List items in shopping list',
-    description='Returns all items from the specified shopping list.',
-    responses={
-        **AUTH_REQUIRED_RESPONSE,
-        **NOT_FOUND_RESPONSE,
-    },
-)
-async def get_list_items(
-        list_id: uuid.UUID,
-        current_user: CurrentUser,
-        uow: UoWDep,
-) -> list[ListItemDTO]:
-    list_items_service = ListItemsService(uow)
-    return await list_items_service.list_for_user(list_id, current_user.id)
-
-
-@router.get(
-    '/{list_id}/items/{item_id}',
-    response_model=ListItemDTO,
-    summary='Get shopping list item',
-    description='Returns a single item from the specified shopping list.',
-    responses={
-        **AUTH_REQUIRED_RESPONSE,
-        **NOT_FOUND_RESPONSE,
-    },
-)
-async def get_list_item(
-        list_id: uuid.UUID,
-        item_id: uuid.UUID,
-        current_user: CurrentUser,
-        uow: UoWDep,
-) -> ListItemDTO:
-    list_items_service = ListItemsService(uow)
-    return await list_items_service.get_for_user(list_id, item_id, current_user.id)
 
 
 @router.post(
@@ -132,21 +76,17 @@ async def create_shopping_list(
         payload: ShoppingListCreateWithItemsDTO,
         current_user: CurrentUser,
         uow: UoWDep,
+        shopping_lists_service: ShoppingListsServiceDep,
 ) -> ShoppingListDTO:
-    shopping_lists_service = ShoppingListsService(uow)
     list_data = ShoppingListCreateDTO(
         **payload.model_dump(exclude={'items', 'workspace_version'})
     )
-    item_data = [
-        ListItemCreateDTO(list_id=list_data.id, **item.model_dump())
-        for item in payload.items
-    ]
     created_list = await shopping_lists_service.create(
         list_data,
         current_user.id,
         expected_workspace_version=payload.workspace_version,
         record_change=True,
-        items=item_data,
+        items=payload.items,
     )
     await uow.commit()
     return created_list
@@ -156,7 +96,7 @@ async def create_shopping_list(
     '/{list_id}',
     response_model=ShoppingListDTO,
     summary='Update shopping list',
-    description='Updates shopping list fields.',
+    description='Updates shopping list fields together list\'s items.',
     responses={
         **AUTH_REQUIRED_RESPONSE,
         **NOT_FOUND_RESPONSE,
@@ -168,18 +108,19 @@ async def patch_shopping_list(
         payload: ShoppingListPatchRequestDTO,
         current_user: CurrentUser,
         uow: UoWDep,
+        shopping_lists_service: ShoppingListsServiceDep,
 ) -> ShoppingListDTO:
-    shopping_lists_service = ShoppingListsService(uow)
     patch_fields = payload.model_dump(exclude={'workspace_version'}, exclude_unset=True)
-    patch_data = ShoppingListPatchDTO(id=list_id, **patch_fields)
-    updated_list = await shopping_lists_service.patch(
+    patch_data = ShoppingListPatchFullDTO(id=list_id, **patch_fields)
+    await shopping_lists_service.patch(
         patch_data,
         current_user.id,
         expected_workspace_version=payload.workspace_version,
         record_change=True,
     )
+    result = await shopping_lists_service.get_with_items(list_id, current_user.id)
     await uow.commit()
-    return updated_list
+    return result
 
 
 @router.delete(
@@ -198,108 +139,10 @@ async def delete_shopping_list(
         payload: ShoppingListDeleteRequestDTO,
         current_user: CurrentUser,
         uow: UoWDep,
+        shopping_lists_service: ShoppingListsServiceDep,
 ) -> None:
-    shopping_lists_service = ShoppingListsService(uow)
     await shopping_lists_service.delete(
         list_id,
-        current_user.id,
-        expected_workspace_version=payload.workspace_version,
-        record_change=True,
-    )
-    await uow.commit()
-
-
-@router.post(
-    '/{list_id}/items',
-    response_model=list[ListItemDTO],
-    status_code=status.HTTP_201_CREATED,
-    summary='Create shopping list items',
-    description='Creates one or more items in the specified shopping list.',
-    responses={
-        **AUTH_REQUIRED_RESPONSE,
-        **NOT_FOUND_RESPONSE,
-        **CREATE_CONFLICT_RESPONSE,
-    },
-)
-async def create_list_items(
-        list_id: uuid.UUID,
-        payload: ListItemsCreateRequestDTO,
-        current_user: CurrentUser,
-        uow: UoWDep,
-) -> list[ListItemDTO]:
-    list_items_service = ListItemsService(uow)
-    items = [
-        ListItemCreateDTO(list_id=list_id, **item.model_dump())
-        for item in payload.items
-    ]
-    created_items = await list_items_service.create(
-        ListItemsCreateDTO(
-            list_id=list_id,
-            items=items,
-        ),
-        current_user.id,
-        expected_workspace_version=payload.workspace_version,
-        record_change=True,
-    )
-    await uow.commit()
-    return created_items
-
-
-@router.patch(
-    '/{list_id}/items',
-    response_model=list[ListItemDTO],
-    summary='Update shopping list items',
-    description='Updates one or more items in the specified shopping list.',
-    responses={
-        **AUTH_REQUIRED_RESPONSE,
-        **NOT_FOUND_RESPONSE,
-        **VERSION_CONFLICT_RESPONSE,
-    },
-)
-async def patch_list_items(
-        list_id: uuid.UUID,
-        payload: ListItemsPatchRequestDTO,
-        current_user: CurrentUser,
-        uow: UoWDep,
-) -> list[ListItemDTO]:
-    list_items_service = ListItemsService(uow)
-    items = [ListItemPatchDTO(**item.model_dump()) for item in payload.items]
-    updated_items = await list_items_service.patch(
-        ListItemsPatchDTO(
-            list_id=list_id,
-            items=items,
-        ),
-        current_user.id,
-        expected_workspace_version=payload.workspace_version,
-        record_change=True,
-    )
-    await uow.commit()
-    return updated_items
-
-
-@router.delete(
-    '/{list_id}/items',
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary='Delete shopping list items',
-    description='Soft-deletes one or more items from the specified shopping list.',
-    responses={
-        **AUTH_REQUIRED_RESPONSE,
-        **NOT_FOUND_RESPONSE,
-        **VERSION_CONFLICT_RESPONSE,
-    },
-)
-async def delete_list_items(
-        list_id: uuid.UUID,
-        payload: ListItemsDeleteRequestDTO,
-        current_user: CurrentUser,
-        uow: UoWDep,
-) -> None:
-    list_items_service = ListItemsService(uow)
-    await list_items_service.delete(
-        ListItemsDeleteDTO(
-            list_id=list_id,
-            ids=payload.ids,
-        ),
         current_user.id,
         expected_workspace_version=payload.workspace_version,
         record_change=True,

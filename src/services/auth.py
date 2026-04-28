@@ -1,10 +1,99 @@
-from core.security import check_password
-from schemas.users import UserAuthDTO, UserDTO
+import uuid
+
+from redis.asyncio import Redis
+from uuid_utils import uuid7
+
+from api.schemas.auth import VerifyCodeDTO, UserRegisterDTO
+from core.config import settings
+from core.security import check_password, generate_code, hash_code, hash_password
+from database.uow import UnitOfWork
+from schemas.users import UserAuthDTO, UserDTO, UserCreateAuthDTO
 from services.base import BaseService
-from services.exceptions import InvalidCredentials
+from services.exceptions import InvalidCredentials, EmailAlreadyExists
 
 
 class AuthService(BaseService):
+    def __init__(self, uow: UnitOfWork, redis: Redis) -> None:
+        super().__init__(uow)
+        self.redis = redis
+
+    async def refresh_token(self, refresh_token: str):
+        from api.auth_tokens import decode_refresh_token_or_raise
+        from core.security import create_refresh_token
+        from api.http_exceptions import invalid_refresh_token_http_exception
+
+        if refresh_token is None:
+            raise invalid_refresh_token_http_exception()
+
+        user_id, refresh_jti = decode_refresh_token_or_raise(refresh_token)
+
+        user = await self.uow.users.get(user_id)
+        if user is None or user.deleted_at is not None:
+            raise invalid_refresh_token_http_exception()
+
+        is_active = await self.uow.refresh_sessions.is_active(user_id, refresh_jti)
+        if not is_active:
+            raise invalid_refresh_token_http_exception()
+
+        was_revoked = await self.uow.refresh_sessions.revoke(user_id, refresh_jti)
+        if not was_revoked:
+            raise invalid_refresh_token_http_exception()
+
+        new_refresh_token, new_refresh_jti, new_refresh_expires_at = create_refresh_token(user.id)
+        await self.uow.refresh_sessions.add(user.id, new_refresh_jti, new_refresh_expires_at)
+        return user, new_refresh_token
+
+    async def register(self, register_data: UserRegisterDTO):
+        found_user: UserDTO = await self.uow.users.get_by(email=register_data.email)
+        if found_user:
+            self._log_info('registration failed email already exists', immediate=True)
+            raise EmailAlreadyExists
+        session_id = str(uuid.uuid4())
+        code = generate_code()
+        code_hash = hash_code(code)
+        redis_key = f"verify:{session_id}"
+        hashed_password = await hash_password(register_data.password)
+        user_data = UserCreateAuthDTO(
+            **register_data.model_dump(),
+            hashed_password=hashed_password,
+            id=str(uuid7())
+        )
+        await self.redis.hset(
+            redis_key,
+            mapping={
+                "code_hash": code_hash,
+                "attempts": 0,
+                "user_data": user_data.model_dump_json()
+            }
+        )
+        await self.redis.expire(redis_key, settings.VERIFY_EMAIL_EXPIRE_SECONDS)
+
+        # await send_email()
+
+        return session_id, VerifyCodeDTO(code=code)
+
+    async def verify(self, verify_data: VerifyCodeDTO, session_id: str):
+        redis_key = f'verify:{session_id}'
+        stored = await self.redis.hgetall(redis_key)
+        if not stored:
+            from api.http_exceptions import ValidationError
+            self._log_info('Verify failed, code expired or not found')
+            raise ValidationError("Code expired or not found")
+        attempts = int(stored.get('attempts', 0))
+        if attempts >= settings.VERIFY_ATTEMPTS:
+            await self.redis.delete(redis_key)
+            from api.http_exceptions import ValidationError
+            self._log_info('Verify failed, too many attempts')
+            raise ValidationError("Too many attempts")
+        if hash_code(verify_data.code) != stored.get('code_hash', None):
+            await self.redis.hincrby(redis_key, "attempts", 1)
+            from api.http_exceptions import ValidationError
+            self._log_info('Verify failed, invalid code')
+            raise ValidationError('Invalid code')
+        user_data = UserCreateAuthDTO.model_validate_json(stored.get('user_data'))
+        await self.redis.delete(redis_key)
+        return user_data
+
     async def authenticate(self, email: str, password: str) -> UserDTO:
         user_with_password: UserAuthDTO | None = await self.uow.users.get_by_email_with_password(email)
 
@@ -13,12 +102,14 @@ class AuthService(BaseService):
             raise InvalidCredentials
 
         if user_with_password.deleted_at is not None:
-            self._log_info('Authentication failed: user deleted', extra={'user_id': user_with_password.id}, immediate=True)
+            self._log_info('Authentication failed: user deleted', extra={'user_id': user_with_password.id},
+                           immediate=True)
             raise InvalidCredentials
 
         is_valid_password = await check_password(password, user_with_password.hashed_password)
         if not is_valid_password:
-            self._log_info('Authentication failed: invalid password', extra={'user_id': user_with_password.id}, immediate=True)
+            self._log_info('Authentication failed: invalid password', extra={'user_id': user_with_password.id},
+                           immediate=True)
             raise InvalidCredentials
 
         return UserDTO(**user_with_password.model_dump())

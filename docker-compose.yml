@@ -15,10 +15,31 @@ services:
       - '${APP_PORT:-8000}:8000'
     networks:
       - postgres
+      - redis
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: shopping_lists_redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", 'yes']
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - redis
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 
   db:
     image: postgres:15-alpine
@@ -71,8 +92,11 @@ services:
 networks:
   postgres:
     driver: bridge
+  redis:
+    driver: bridge
 
 
 volumes:
+  redis_data:
   pg_data:
   pgadmin_data:

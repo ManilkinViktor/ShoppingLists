@@ -1,12 +1,10 @@
-
 import logging
-import sys
 import queue
-from logging.handlers import QueueHandler, QueueListener
+import sys
 from abc import ABCMeta
 from functools import wraps
+from logging.handlers import QueueHandler, QueueListener
 from typing import Any, Callable
-
 
 
 # --- Colorized StreamHandler for QueueListener ---
@@ -27,6 +25,7 @@ class ColoredFormatter(logging.Formatter):
             return f"{color}{msg}{self.COLOR_RESET}"
         return msg
 
+
 def get_colored_stream_handler() -> logging.Handler:
     fmt = '%(asctime)s | %(levelname)-8s | %(name)s:%(lineno)d | %(message)s'
     datefmt = '%Y-%m-%d %H:%M:%S'
@@ -34,11 +33,13 @@ def get_colored_stream_handler() -> logging.Handler:
     handler.setFormatter(ColoredFormatter(fmt, datefmt=datefmt))
     return handler
 
+
 # --- QueueHandler/QueueListener setup ---
 _log_queue = queue.Queue(-1)
 _stream_handler = get_colored_stream_handler()
 _queue_listener = QueueListener(_log_queue, _stream_handler, respect_handler_level=True)
 _queue_listener.start()
+
 
 def get_queue_handler() -> logging.Handler:
     return QueueHandler(_log_queue)
@@ -50,7 +51,6 @@ def get_logger(name: str) -> logging.Logger:
     if not any(isinstance(h, QueueHandler) for h in logger.handlers):
         logger.addHandler(get_queue_handler())
     return logger
-
 
 
 class LoggerMeta(ABCMeta):

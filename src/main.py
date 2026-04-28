@@ -1,21 +1,20 @@
-
 import logging
-from core.logger import get_queue_handler
+
 import uvicorn
 from fastapi import FastAPI
 
 from api.auth import router as auth_router
+from api.lifespan import lifespan
 from api.route_exceptions import register_route_exception_handlers
 from api.shopping_lists import router as shopping_lists_router
 from api.utils import router as utils_router
 from api.workspaces import router as workspaces_router
+from core.logger import get_queue_handler
 from schemas import rebuild_models
-
 
 rebuild_models()
 
-
-app = FastAPI(title='ShoppingLists API', root_path='/shopping_lists_api')
+app = FastAPI(title='ShoppingLists API', root_path='/shopping_lists_api', lifespan=lifespan)
 register_route_exception_handlers(app)
 app.include_router(utils_router)
 app.include_router(auth_router)
@@ -27,7 +26,6 @@ root_logger = logging.getLogger()
 if not any(isinstance(h, logging.handlers.QueueHandler) for h in root_logger.handlers):
     root_logger.addHandler(get_queue_handler())
     root_logger.setLevel(logging.INFO)
-
 
 if __name__ == '__main__':
     uvicorn.run(

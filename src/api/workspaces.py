@@ -2,6 +2,8 @@ import uuid
 
 from fastapi import APIRouter, status
 
+from api.dependencies import (CurrentUser, UoWDep, WorkspacesServiceDep,
+                              WorkspaceMembersServiceDep, WorkspaceInviteServiceDep, WorkspaceSyncServiceDep)
 from api.docs.responses import (
     AUTH_REQUIRED_RESPONSE,
     NOT_FOUND_RESPONSE,
@@ -10,7 +12,6 @@ from api.docs.responses import (
     UUID_CONFLICT_RESPONSE,
     VERSION_CONFLICT_RESPONSE,
 )
-from api.dependencies import CurrentUser, UoWDep
 from api.schemas.workspace_invites import CreateInviteRequestDTO, JoinByInviteRequestDTO
 from api.schemas.workspace_members import UpdateMemberRoleRequestDTO
 from api.schemas.workspaces import (
@@ -26,10 +27,6 @@ from schemas.workspace_changes import (
 from schemas.workspace_invites import InviteCodeResponseDTO
 from schemas.workspace_members import WorkspaceMemberDTO
 from schemas.workspaces import WorkspaceCreateDTO, WorkspacePatchDTO, WorkspaceDTO, WorkspaceRelListDTO
-from services.workspace_invites import WorkspaceInviteService
-from services.workspace_members import WorkspaceMembersService
-from services.workspace_sync import WorkspaceSyncService
-from services.workspaces import WorkspacesService
 
 router = APIRouter(prefix='/workspaces', tags=['workspaces'])
 
@@ -43,9 +40,8 @@ router = APIRouter(prefix='/workspaces', tags=['workspaces'])
 )
 async def list_workspaces(
         current_user: CurrentUser,
-        uow: UoWDep,
+        workspaces_service: WorkspacesServiceDep
 ) -> list[WorkspaceDTO]:
-    workspaces_service = WorkspacesService(uow)
     return await workspaces_service.list_for_user(current_user.id)
 
 
@@ -58,9 +54,8 @@ async def list_workspaces(
 )
 async def list_workspaces_with_lists(
         current_user: CurrentUser,
-        uow: UoWDep,
+        workspaces_service: WorkspacesServiceDep
 ) -> list[WorkspaceRelListDTO]:
-    workspaces_service = WorkspacesService(uow)
     return await workspaces_service.list_with_lists_for_user(current_user.id)
 
 
@@ -77,41 +72,9 @@ async def list_workspaces_with_lists(
 async def get_workspace(
         workspace_id: uuid.UUID,
         current_user: CurrentUser,
-        uow: UoWDep,
+        workspaces_service: WorkspacesServiceDep,
 ) -> WorkspaceRelListDTO:
-    workspaces_service = WorkspacesService(uow)
     return await workspaces_service.get_with_lists(workspace_id, current_user.id)
-
-
-@router.post(
-    '',
-    response_model=WorkspaceDTO,
-    status_code=status.HTTP_201_CREATED,
-    summary='Create workspace',
-    description='Creates a new workspace for the current user and records the change for sync.',
-    responses={
-        **AUTH_REQUIRED_RESPONSE,
-        **UUID_CONFLICT_RESPONSE,
-    },
-)
-async def create_workspace(
-        payload: WorkspaceCreateRequestDTO,
-        current_user: CurrentUser,
-        uow: UoWDep,
-) -> WorkspaceDTO:
-    workspaces_service = WorkspacesService(uow)
-    workspace_data = WorkspaceCreateDTO(
-        id=payload.id,
-        name=payload.name,
-        description=payload.description,
-    )
-    workspace = await workspaces_service.create(
-        workspace_data,
-        current_user.id,
-        record_change=True,
-    )
-    await uow.commit()
-    return workspace
 
 
 @router.patch(
@@ -130,14 +93,45 @@ async def patch_workspace(
         payload: WorkspacePatchRequestDTO,
         current_user: CurrentUser,
         uow: UoWDep,
+        workspaces_service: WorkspacesServiceDep,
 ) -> WorkspaceDTO:
-    workspaces_service = WorkspacesService(uow)
     patch_fields = payload.model_dump(exclude={'workspace_version'}, exclude_unset=True)
     patch_data = WorkspacePatchDTO(id=workspace_id, **patch_fields)
     workspace = await workspaces_service.patch(
         patch_data,
         current_user.id,
         expected_workspace_version=payload.workspace_version,
+        record_change=True,
+    )
+    await uow.commit()
+    return workspace
+
+
+@router.post(
+    '',
+    response_model=WorkspaceDTO,
+    status_code=status.HTTP_201_CREATED,
+    summary='Create workspace',
+    description='Creates a new workspace for the current user and records the change for sync.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **UUID_CONFLICT_RESPONSE,
+    },
+)
+async def create_workspace(
+        payload: WorkspaceCreateRequestDTO,
+        current_user: CurrentUser,
+        uow: UoWDep,
+        workspaces_service: WorkspacesServiceDep,
+) -> WorkspaceDTO:
+    workspace_data = WorkspaceCreateDTO(
+        id=payload.id,
+        name=payload.name,
+        description=payload.description,
+    )
+    workspace = await workspaces_service.create(
+        workspace_data,
+        current_user.id,
         record_change=True,
     )
     await uow.commit()
@@ -160,8 +154,8 @@ async def delete_workspace(
         payload: WorkspaceDeleteRequestDTO,
         current_user: CurrentUser,
         uow: UoWDep,
+        workspaces_service: WorkspacesServiceDep,
 ) -> None:
-    workspaces_service = WorkspacesService(uow)
     await workspaces_service.delete(
         workspace_id,
         current_user.id,
@@ -187,9 +181,10 @@ async def pull_workspace_changes(
         versions: list[WorkspaceVersionDTO],
         current_user: CurrentUser,
         uow: UoWDep,
+        sync_service: WorkspaceSyncServiceDep
 ) -> list[WorkspaceChangeCreateDTO]:
-    sync_service = WorkspaceSyncService(uow)
     changes = await sync_service.pull_changes(current_user.id, versions)
+    await uow.commit()
     return changes
 
 
@@ -209,8 +204,8 @@ async def push_workspace_changes(
         changes: list[WorkspaceChangeCreateDTO],
         current_user: CurrentUser,
         uow: UoWDep,
+        sync_service: WorkspaceSyncServiceDep
 ) -> list[WorkspacePushResultDTO]:
-    sync_service = WorkspaceSyncService(uow)
     result = await sync_service.push_changes(current_user.id, changes)
     await uow.commit()
     return result
@@ -232,15 +227,17 @@ async def create_workspace_invite(
         payload: CreateInviteRequestDTO,
         current_user: CurrentUser,
         uow: UoWDep,
+        invite_service: WorkspaceInviteServiceDep
 ) -> InviteCodeResponseDTO:
-    invite_service = WorkspaceInviteService(uow)
-    return await invite_service.create_invite(
+    result = await invite_service.create_invite(
         workspace_id,
         current_user.id,
         payload.role,
         payload.max_uses,
         payload.expires_in_hours,
     )
+    await uow.commit()
+    return result
 
 
 @router.post(
@@ -258,28 +255,11 @@ async def join_workspace_by_invite(
         payload: JoinByInviteRequestDTO,
         current_user: CurrentUser,
         uow: UoWDep,
+        invite_service: WorkspaceInviteServiceDep,
 ) -> WorkspaceDTO:
-    invite_service = WorkspaceInviteService(uow)
-    return await invite_service.join_workspace(payload.code, current_user.id)
-
-
-@router.get(
-    '/{workspace_id}/members',
-    response_model=list[WorkspaceMemberDTO],
-    summary='List workspace members',
-    description='Returns all members of the workspace visible to the current user.',
-    responses={
-        **AUTH_REQUIRED_RESPONSE,
-        **NOT_FOUND_RESPONSE,
-    },
-)
-async def list_workspace_members(
-        workspace_id: uuid.UUID,
-        current_user: CurrentUser,
-        uow: UoWDep,
-) -> list[WorkspaceMemberDTO]:
-    members_service = WorkspaceMembersService(uow)
-    return await members_service.get_members(workspace_id, current_user.id)
+    result = await invite_service.join_workspace(payload.code, current_user.id)
+    await uow.commit()
+    return result
 
 
 @router.patch(
@@ -299,8 +279,8 @@ async def update_member_role(
         payload: UpdateMemberRoleRequestDTO,
         current_user: CurrentUser,
         uow: UoWDep,
+        members_service: WorkspaceMembersServiceDep,
 ) -> WorkspaceMemberDTO:
-    members_service = WorkspaceMembersService(uow)
     member = await members_service.update_member_role(
         workspace_id,
         user_id,
@@ -309,6 +289,24 @@ async def update_member_role(
     )
     await uow.commit()
     return member
+
+
+@router.get(
+    '/{workspace_id}/members',
+    response_model=list[WorkspaceMemberDTO],
+    summary='List workspace members',
+    description='Returns all members of the workspace visible to the current user.',
+    responses={
+        **AUTH_REQUIRED_RESPONSE,
+        **NOT_FOUND_RESPONSE,
+    },
+)
+async def list_workspace_members(
+        workspace_id: uuid.UUID,
+        current_user: CurrentUser,
+        members_service: WorkspaceMembersServiceDep,
+) -> list[WorkspaceMemberDTO]:
+    return await members_service.get_members(workspace_id, current_user.id)
 
 
 @router.delete(
@@ -327,7 +325,7 @@ async def remove_member(
         user_id: uuid.UUID,
         current_user: CurrentUser,
         uow: UoWDep,
+        members_service: WorkspaceMembersServiceDep,
 ) -> None:
-    members_service = WorkspaceMembersService(uow)
     await members_service.remove_member(workspace_id, user_id, current_user.id)
     await uow.commit()

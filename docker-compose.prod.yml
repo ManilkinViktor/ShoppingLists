@@ -14,8 +14,11 @@ services:
     networks:
       - postgres
       - shared-network
+      - redis
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
 
@@ -45,6 +48,21 @@ services:
     tty: true
     stdin_open: true
 
+  redis:
+    image: redis:7-alpine
+    container_name: shopping_lists_redis
+    command: [ "redis-server", "--appendonly", 'yes' ]
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - redis
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -72,8 +90,11 @@ networks:
     driver: bridge
   shared-network:
     external: true
+  redis:
+    driver: bridge
 
 
 volumes:
+  redis_data:
   pg_data:
   pgadmin_data:

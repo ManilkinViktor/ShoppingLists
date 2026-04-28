@@ -11,7 +11,6 @@ if TYPE_CHECKING:
 
 
 class ListItemCreateDTO(UUIDMixinDTO):
-    list_id: uuid.UUID
     name: str = Field(min_length=1, max_length=FieldConstraints.BASE_LEN)
     quantity: int = Field(gt=0, lt=FieldConstraints.QUANTITY_BORDER)
     unit: str | None = Field(max_length=FieldConstraints.BASE_LEN)
@@ -20,7 +19,6 @@ class ListItemCreateDTO(UUIDMixinDTO):
 
 
 class ListItemPatchDTO(UUIDMixinDTO):
-    list_id: uuid.UUID | None = None
     name: str | None = Field(default=None, min_length=1, max_length=FieldConstraints.BASE_LEN)
     delta_quantity: int | None = Field(
         default=None,
