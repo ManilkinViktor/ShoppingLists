@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 
 class ListItemCreateDTO(UUIDMixinDTO):
+    list_id: uuid.UUID | None = None
     name: str = Field(min_length=1, max_length=FieldConstraints.BASE_LEN)
     quantity: int = Field(gt=0, lt=FieldConstraints.QUANTITY_BORDER)
     unit: str | None = Field(max_length=FieldConstraints.BASE_LEN)

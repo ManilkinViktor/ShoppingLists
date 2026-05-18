@@ -34,7 +34,7 @@ class ListItemsService(BaseService):
     @staticmethod
     def _same_items(first_item: ListItemDTO, second_item: ListItemCreateDTO) -> bool:
         return all(
-            getattr(first_item, field) == value
+            getattr(first_item, field, None) == value
             for field, value in second_item
         )
 
@@ -64,7 +64,7 @@ class ListItemsService(BaseService):
 
             found_item = existing_items_by_id.get(item_data.id)
 
-            if not self._same_items(found_item, item_data):
+            if found_item is not None and not self._same_items(found_item, item_data):
                 self._log_warning("Conflict uuid: list item with same uuid and another data exists", immediate=True)
                 raise ConflictUUID
 
