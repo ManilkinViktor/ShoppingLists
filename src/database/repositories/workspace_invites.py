@@ -20,6 +20,6 @@ class WorkspaceInvitesRepository(
         super().__init__(
             _session,
             _model=WorkspaceInvitesOrm,
-            _add_dto=WorkspaceInviteDTO,
+            _add_dto=WorkspaceInviteCreateDTO,
             _dto=WorkspaceInviteDTO
         )

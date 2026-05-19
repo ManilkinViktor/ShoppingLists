@@ -53,3 +53,23 @@ class OwnerRemovalForbidden(DomainException):
 class InvalidListItemQuantity(DomainException):
     error_code: str = 'INVALID_ITEM_QUANTITY'
     public_message: str = "Item quantity must be positive"
+
+
+class InviteInactive(DomainException):
+    error_code: str = 'INVITE_INACTIVE'
+    public_message: str = 'Invitation is no longer active'
+
+
+class InviteExpired(DomainException):
+    error_code: str = 'INVITE_EXPIRED'
+    public_message: str = 'Invitation has expired'
+
+
+class InviteMaxUsesReached(DomainException):
+    error_code: str = 'INVITE_MAX_USES_REACHED'
+    public_message: str = 'Invitation has reached maximum uses'
+
+
+class AlreadyWorkspaceMember(DomainException):
+    error_code: str = 'ALREADY_WORKSPACE_MEMBER'
+    public_message: str = 'You are already a member of this workspace'

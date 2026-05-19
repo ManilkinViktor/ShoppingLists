@@ -7,10 +7,11 @@ from core.enums import Role
 
 
 class WorkspaceInviteCreateDTO(BaseModel):
+    id: str
     workspace_id: uuid.UUID
     role: Role
+    expires_at: datetime.datetime
     max_uses: int | None = Field(default=None, ge=1)
-    expires_in_hours: int = Field(default=24, ge=1)
 
 
 class WorkspaceInviteDTO(BaseModel):

@@ -4,14 +4,20 @@ import string
 from uuid import UUID
 
 from core.enums import Role
-from database.models import WorkspaceInvitesOrm
 from database.uow import UnitOfWork
-from schemas.workspace_invites import WorkspaceInviteDTO, InviteCodeResponseDTO
+from schemas.workspace_invites import WorkspaceInviteDTO, WorkspaceInviteCreateDTO, InviteCodeResponseDTO
 from schemas.workspace_members import WorkspaceMemberCreateDTO
 from schemas.workspaces import WorkspaceDTO
 from services.access_control import AccessController
 from services.base import BaseService
-from services.exceptions import EntityNotFound, DomainException
+from services.exceptions import (
+    EntityNotFound,
+    DomainException,
+    InviteInactive,
+    InviteExpired,
+    InviteMaxUsesReached,
+    AlreadyWorkspaceMember,
+)
 from utils.datetime_utils import utc_now
 
 
@@ -40,14 +46,13 @@ class WorkspaceInviteService(BaseService):
         code = self._generate_invite_code()
         expires_at = utc_now() + datetime.timedelta(hours=expires_in_hours)
 
-        invite = WorkspaceInvitesOrm(
+        await self.uow.workspace_invites.add(WorkspaceInviteCreateDTO(
             id=code,
             workspace_id=workspace_id,
             role=role,
             expires_at=expires_at,
             max_uses=max_uses,
-        )
-        self.uow._session.add(invite)
+        ))
         await self.uow.commit()
 
         self._log_info(
@@ -70,7 +75,7 @@ class WorkspaceInviteService(BaseService):
                 extra={'code': invite.id, 'workspace_id': invite.workspace_id},
                 immediate=True,
             )
-            raise DomainException("Invitation is no longer active")
+            raise InviteInactive()
 
         now = utc_now()
         if now > invite.expires_at:
@@ -79,7 +84,7 @@ class WorkspaceInviteService(BaseService):
                 extra={'code': invite.id, 'workspace_id': invite.workspace_id},
                 immediate=True,
             )
-            raise DomainException("Invitation has expired")
+            raise InviteExpired()
 
         if invite.max_uses and invite.current_uses >= invite.max_uses:
             self._log_warning(
@@ -87,7 +92,7 @@ class WorkspaceInviteService(BaseService):
                 extra={'code': invite.id, 'workspace_id': invite.workspace_id},
                 immediate=True,
             )
-            raise DomainException("Invitation has reached maximum uses")
+            raise InviteMaxUsesReached()
 
     async def _check_user_not_member(self, current_user: UUID, workspace_id: UUID) -> None:
         existing_member = await self.uow.workspace_members.get_by(
@@ -100,7 +105,7 @@ class WorkspaceInviteService(BaseService):
                 extra={'workspace_id': workspace_id, 'user_id': current_user},
                 immediate=True,
             )
-            raise DomainException("You are already a member of this workspace")
+            raise AlreadyWorkspaceMember()
 
     async def _add_user_to_workspace(self, invite: WorkspaceInviteDTO, current_user: UUID) -> None:
         membership = WorkspaceMemberCreateDTO(
