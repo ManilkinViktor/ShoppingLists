@@ -159,10 +159,9 @@ class WorkspacesService(BaseService):
             expected_workspace_version: int | None = None,
             record_change: bool = False,
     ) -> None:
-        await self._access_control.ensure_editor_access(
+        await self._access_control.ensure_owner_access(
             current_user,
             workspace_id,
-            editable_workspace_ids=self._editable_workspace_ids,
             entity_type=WorkspaceDTO,
         )
 
