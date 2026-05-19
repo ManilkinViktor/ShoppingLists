@@ -73,3 +73,8 @@ class InviteMaxUsesReached(DomainException):
 class AlreadyWorkspaceMember(DomainException):
     error_code: str = 'ALREADY_WORKSPACE_MEMBER'
     public_message: str = 'You are already a member of this workspace'
+
+
+class PermissionDenied(DomainException):
+    error_code: str = 'PERMISSION_DENIED'
+    public_message: str = 'You do not have permission to perform this action'

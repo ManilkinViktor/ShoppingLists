@@ -9,6 +9,7 @@ from services.exceptions import (
     InvalidCredentials,
     OwnerRemovalForbidden,
     OwnerRoleChangeForbidden,
+    PermissionDenied,
     WorkspaceVersionMismatch,
 )
 
@@ -51,6 +52,11 @@ def domain_to_http_exception(error: DomainException) -> HTTPException:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={'code': error.error_code, 'message': error.public_message},
             headers={'WWW-Authenticate': 'Bearer'},
+        )
+    if isinstance(error, PermissionDenied):
+        return HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={'code': error.error_code, 'message': error.public_message},
         )
     if isinstance(error, EntityNotFound):
         return HTTPException(
