@@ -2,7 +2,7 @@ import datetime
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String, TIMESTAMP, Index
+from sqlalchemy import Enum, ForeignKey, TIMESTAMP, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.enums import Role
@@ -18,7 +18,7 @@ class WorkspaceInvitesOrm(Base):
 
     cnt_repr_attrs = 2
 
-    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     workspace_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('workspaces.id', ondelete='CASCADE'))
     role: Mapped[Role]
     created_at: Mapped[datetime.datetime] = mapped_column(

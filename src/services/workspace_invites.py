@@ -1,7 +1,5 @@
 import datetime
-import secrets
-import string
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from core.enums import Role
 from database.uow import UnitOfWork
@@ -12,7 +10,6 @@ from services.access_control import AccessController
 from services.base import BaseService
 from services.exceptions import (
     EntityNotFound,
-    DomainException,
     InviteInactive,
     InviteExpired,
     InviteMaxUsesReached,
@@ -22,16 +19,10 @@ from utils.datetime_utils import utc_now
 
 
 class WorkspaceInviteService(BaseService):
-    INVITE_CODE_LENGTH = 24
 
     def __init__(self, uow: UnitOfWork) -> None:
         super().__init__(uow)
         self._access_control = AccessController(uow, self.logger)
-
-    @staticmethod
-    def _generate_invite_code() -> str:
-        chars = string.ascii_letters + string.digits
-        return ''.join(secrets.choice(chars) for _ in range(WorkspaceInviteService.INVITE_CODE_LENGTH))
 
     async def create_invite(
             self,
@@ -43,7 +34,7 @@ class WorkspaceInviteService(BaseService):
     ) -> InviteCodeResponseDTO:
         await self._access_control.ensure_owner_access(current_user, workspace_id, WorkspaceDTO)
 
-        code = self._generate_invite_code()
+        code = uuid4()
         expires_at = utc_now() + datetime.timedelta(hours=expires_in_hours)
 
         await self.uow.workspace_invites.add(WorkspaceInviteCreateDTO(
@@ -128,7 +119,7 @@ class WorkspaceInviteService(BaseService):
             }
         )
 
-    async def join_workspace(self, code: str, current_user: UUID) -> WorkspaceDTO:
+    async def join_workspace(self, code: UUID, current_user: UUID) -> WorkspaceDTO:
         invite = await self.uow.workspace_invites.get(code)
         if not invite:
             self._log_warning(
@@ -151,7 +142,7 @@ class WorkspaceInviteService(BaseService):
         await self._access_control.ensure_owner_access(current_user, workspace_id, WorkspaceDTO)
         return await self.uow.workspace_invites.get_all(workspace_id=workspace_id)
 
-    async def revoke_invite(self, code: str, current_user: UUID) -> None:
+    async def revoke_invite(self, code: UUID, current_user: UUID) -> None:
         invite = await self.uow.workspace_invites.get(code)
         if not invite:
             self._log_warning(

@@ -2,7 +2,7 @@ import datetime
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, PrimaryKeyConstraint, TIMESTAMP
+from sqlalchemy import Enum, ForeignKey, PrimaryKeyConstraint, TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.enums import Role

@@ -1,3 +1,5 @@
+import uuid
+
 from pydantic import BaseModel, Field
 
 from core.enums import Role
@@ -10,4 +12,4 @@ class CreateInviteRequestDTO(BaseModel):
 
 
 class JoinByInviteRequestDTO(BaseModel):
-    code: str = Field(min_length=1, max_length=32)
+    code: uuid.UUID

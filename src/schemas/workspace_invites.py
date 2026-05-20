@@ -7,7 +7,7 @@ from core.enums import Role
 
 
 class WorkspaceInviteCreateDTO(BaseModel):
-    id: str
+    id: uuid.UUID
     workspace_id: uuid.UUID
     role: Role
     expires_at: datetime.datetime
@@ -15,7 +15,7 @@ class WorkspaceInviteCreateDTO(BaseModel):
 
 
 class WorkspaceInviteDTO(BaseModel):
-    id: str
+    id: uuid.UUID
     workspace_id: uuid.UUID
     role: Role
     created_at: datetime.datetime
@@ -26,7 +26,7 @@ class WorkspaceInviteDTO(BaseModel):
 
 
 class InviteCodeResponseDTO(BaseModel):
-    code: str
+    code: uuid.UUID
     role: Role
     expires_at: datetime.datetime
     max_uses: int | None
