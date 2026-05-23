@@ -44,7 +44,6 @@ class WorkspaceInviteService(BaseService):
             expires_at=expires_at,
             max_uses=max_uses,
         ))
-        await self.uow.commit()
 
         self._log_info(
             "Invitation code created",
@@ -132,7 +131,6 @@ class WorkspaceInviteService(BaseService):
         await self._validate_invite(invite)
         await self._check_user_not_member(current_user, invite.workspace_id)
         await self._add_user_to_workspace(invite, current_user)
-        await self.uow.commit()
 
         workspace = await self.uow.workspaces.get(invite.workspace_id)
         assert workspace is not None
@@ -155,7 +153,6 @@ class WorkspaceInviteService(BaseService):
         await self._access_control.ensure_owner_access(current_user, invite.workspace_id, WorkspaceDTO)
 
         invite.is_active = False
-        await self.uow.commit()
 
         self._log_info(
             "Invitation code revoked",
